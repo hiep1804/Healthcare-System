@@ -21,13 +21,23 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        
+        # Security: Only admins can register non-patient roles
+        if data.get('role') and data.get('role') != 'PATIENT':
+            if not request.user.is_authenticated or not request.user.user_roles.filter(role__name='ADMIN').exists():
+                return Response({"error": "Chỉ Admin mới có quyền tạo tài khoản Bác sĩ."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = RegisterSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         tokens = RefreshToken.for_user(user)
         roles = list(user.user_roles.values_list('role__name', flat=True))
+        tokens['roles'] = roles
+        access_token = tokens.access_token
+        access_token['roles'] = roles
         return Response({
-            'access_token': str(tokens.access_token),
+            'access_token': str(access_token),
             'refresh_token': str(tokens),
             'expires_in': 3600,
             'user': {
@@ -57,6 +67,9 @@ class LoginView(APIView):
 
         tokens = RefreshToken.for_user(user)
         roles = list(user.user_roles.values_list('role__name', flat=True))
+        tokens['roles'] = roles
+        access_token = tokens.access_token
+        access_token['roles'] = roles
 
         # Create session
         Session.objects.create(
@@ -68,7 +81,7 @@ class LoginView(APIView):
         )
 
         return Response({
-            'access_token': str(tokens.access_token),
+            'access_token': str(access_token),
             'refresh_token': str(tokens),
             'expires_in': 3600,
             'user': {
@@ -188,6 +201,10 @@ class MFAVerifyView(APIView):
 
             tokens = RefreshToken.for_user(user)
             roles = list(user.user_roles.values_list('role__name', flat=True))
+            tokens['roles'] = roles
+            access_token = tokens.access_token
+            access_token['roles'] = roles
+            roles = list(user.user_roles.values_list('role__name', flat=True))
 
             Session.objects.create(
                 user=user,
@@ -198,7 +215,7 @@ class MFAVerifyView(APIView):
             )
 
             return Response({
-                'access_token': str(tokens.access_token),
+                'access_token': str(access_token),
                 'refresh_token': str(tokens),
                 'expires_in': 3600,
                 'user': {
@@ -215,11 +232,20 @@ class MFAVerifyView(APIView):
 
 
 class CurrentUserView(APIView):
-    """GET /api/v1/users/me - Get current user info."""
+    """
+    GET /api/v1/users/me - Get current user info.
+    PATCH /api/v1/users/me - Update current user info.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)
 
 

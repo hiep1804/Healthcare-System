@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { AuditAPI, getUser } from '../api.js';
+import { AuditAPI, getUser, getErrorMessage } from '../api.js';
 
 export const AuditPage = () => {
   return `

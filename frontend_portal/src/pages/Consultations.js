@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { ConsultationAPI } from '../api.js';
+import { ConsultationAPI, getErrorMessage } from '../api.js';
 
 export const ConsultationsPage = () => {
   return `
@@ -40,6 +40,7 @@ export const attachConsultationsListeners = async () => {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">Failed to load consultations. Is Consultation Service (8005) running?</div>`;
+    const msg = getErrorMessage(e, 'Failed to load consultations.');
+    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">${msg}</div>`;
   }
 };

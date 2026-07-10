@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { ProviderAPI } from '../api.js';
+import { ProviderAPI, getErrorMessage } from '../api.js';
 
 export const ProvidersPage = () => {
   return `

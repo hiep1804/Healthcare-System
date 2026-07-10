@@ -34,6 +34,38 @@ class SpecialtyListCreateView(APIView):
         return Response(SpecialtySerializer(specialty).data, status=status.HTTP_201_CREATED)
 
 
+class ProviderMeView(APIView):
+    """
+    GET /api/v1/providers/me - View own provider profile (Doctor)
+    PATCH /api/v1/providers/me - Update own provider profile (Doctor)
+    """
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        try:
+            provider = Provider.objects.get(user_id=request.user.id)
+        except Provider.DoesNotExist:
+            return Response(
+                {'error': {'code': 'PROVIDER_NOT_FOUND', 'message': 'Hồ sơ bác sĩ chưa được tạo.'}},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = ProviderSerializer(provider)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        try:
+            provider = Provider.objects.get(user_id=request.user.id)
+        except Provider.DoesNotExist:
+            return Response(
+                {'error': {'code': 'PROVIDER_NOT_FOUND', 'message': 'Hồ sơ bác sĩ chưa được tạo.'}},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = ProviderCreateSerializer(provider, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProviderSerializer(provider).data)
+
+
 class ProviderListCreateView(APIView):
     """
     GET /api/v1/providers - Search and list providers (Public)
@@ -70,10 +102,13 @@ class ProviderListCreateView(APIView):
         # In full design, it joins with appointment-service time slots
         # For now, we will return the matching providers.
 
-        page = self.options_page(queryset, request)
+        # Apply standard pagination manually since we're using APIView
+        from common.pagination import StandardResultsSetPagination
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
         if page is not None:
             serializer = ProviderSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = ProviderSerializer(queryset, many=True)
         return Response({'data': serializer.data})
@@ -83,21 +118,6 @@ class ProviderListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         provider = serializer.save()
         return Response(ProviderSerializer(provider).data, status=status.HTTP_201_CREATED)
-
-    def options_page(self, queryset, request):
-        # DRF-compatible pagination helpers
-        from common.pagination import StandardResultsSetPagination
-        paginator = StandardResultsSetPagination()
-        return paginator.paginate_queryset(queryset, request, view=self)
-
-    def get_paginated_response(self, data):
-        from common.pagination import StandardResultsSetPagination
-        paginator = StandardResultsSetPagination()
-        # Mock request is needed for paginator, but custom works too
-        class MockView:
-            pagination_class = StandardResultsSetPagination
-        paginator.page = self.options_page(Provider.objects.all(), self.request)
-        return paginator.get_paginated_response(data)
 
 
 class ProviderDetailView(APIView):

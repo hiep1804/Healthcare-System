@@ -41,17 +41,17 @@ def custom_exception_handler(exc, context):
         return response
 
     # Handle unexpected exceptions
-    return Response(
-        {
+    if response is None:
+        import traceback
+        traceback.print_exc()
+        return Response({
             'error': {
                 'code': 'INTERNAL_SERVER_ERROR',
                 'message': 'An unexpected error occurred.',
                 'details': {},
                 'request_id': request_id,
             }
-        },
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ServiceException(Exception):

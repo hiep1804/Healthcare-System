@@ -10,8 +10,7 @@ const API_PORTS = {
   subscription: 8009,
   insurance: 8010,
 };
-
-const BASE_URL = 'http://127.0.0.1';
+const BASE_URL = 'http://127.0.0.1:8000'; // API Gateway
 
 export const getToken = () => localStorage.getItem('access_token');
 export const setToken = (token) => localStorage.setItem('access_token', token);
@@ -20,10 +19,8 @@ export const getUser = () => JSON.parse(localStorage.getItem('user'));
 export const setUser = (user) => localStorage.setItem('user', JSON.stringify(user));
 
 export const apiFetch = async (serviceName, endpoint, options = {}) => {
-  const port = API_PORTS[serviceName];
-  if (!port) throw new Error(`Unknown service: ${serviceName}`);
-
-  const url = `${BASE_URL}:${port}/api/v1${endpoint}`;
+  // We ignore serviceName now because API Gateway routes based on the endpoint path itself!
+  const url = `${BASE_URL}/api/v1${endpoint}`;
   
   const headers = {
     'Content-Type': 'application/json',
@@ -49,7 +46,8 @@ export const apiFetch = async (serviceName, endpoint, options = {}) => {
   const contentType = response.headers.get('content-type');
   let data = null;
   if (contentType && contentType.includes('application/json')) {
-    data = await response.json();
+    const json = await response.json();
+    data = json.data !== undefined ? json.data : json;
   } else if (response.status !== 204) {
     data = await response.text();
   }
@@ -59,6 +57,27 @@ export const apiFetch = async (serviceName, endpoint, options = {}) => {
   }
 
   return data;
+};
+
+// Helper function to extract error message from API response
+export const getErrorMessage = (error, defaultMsg = 'An error occurred') => {
+  if (error && error.data) {
+    if (typeof error.data === 'string') return error.data;
+    if (error.data.error) {
+      if (typeof error.data.error === 'string') return error.data.error;
+      if (error.data.error.message) return error.data.error.message;
+      if (error.data.error.detail) return error.data.error.detail;
+    }
+    if (error.data.detail) return error.data.detail;
+    
+    // Extract first array error if it's a validation dict
+    const keys = Object.keys(error.data);
+    if (keys.length > 0 && Array.isArray(error.data[keys[0]])) {
+      return `${keys[0]}: ${error.data[keys[0]][0]}`;
+    }
+    return JSON.stringify(error.data);
+  }
+  return error.message || defaultMsg;
 };
 
 // 1. Identity Service
@@ -71,19 +90,26 @@ export const AuthAPI = {
     method: 'POST',
     body: JSON.stringify(userData)
   }),
+  getMe: () => apiFetch('identity', '/users/me'),
+  updateMe: (data) => apiFetch('identity', '/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // 2. Patient Service
 export const PatientAPI = {
   getProfile: (patientId) => apiFetch('patient', `/patients/${patientId}`).catch(() => null), // Return null if not created yet
   createProfile: (data) => apiFetch('patient', `/patients`, { method: 'POST', body: JSON.stringify(data) }),
-  updateProfile: (patientId, data) => apiFetch('patient', `/patients/${patientId}`, { method: 'PATCH', body: JSON.stringify(data) })
+  updateProfile: (patientId, data) => apiFetch('patient', `/patients/${patientId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  getMe: () => apiFetch('patient', '/patients/me').catch(() => null),
+  updateMe: (data) => apiFetch('patient', '/patients/me', { method: 'PATCH', body: JSON.stringify(data) })
 };
 
 // 3. Provider Service
 export const ProviderAPI = {
   getProviders: () => apiFetch('provider', '/providers'),
-  getSpecialties: () => apiFetch('provider', '/specialties')
+  getSpecialties: () => apiFetch('provider', '/specialties'),
+  createProfile: (data) => apiFetch('provider', '/providers', { method: 'POST', body: JSON.stringify(data) }),
+  getMe: () => apiFetch('provider', '/providers/me').catch(() => null),
+  updateMe: (data) => apiFetch('provider', '/providers/me', { method: 'PATCH', body: JSON.stringify(data) })
 };
 
 // 4. Appointment Service
@@ -109,7 +135,7 @@ export const NotificationAPI = {
 
 // 8. Audit Service
 export const AuditAPI = {
-  getEvents: () => apiFetch('audit', '/audit/events')
+  getEvents: () => apiFetch('audit', '/audit/search')
 };
 
 // 9. Subscription Service

@@ -14,7 +14,7 @@ import signal
 BASE_DIR = r'e:\TTTN'
 
 SERVICES = [
-    {'name': 'identity-service',       'dir': 'identity_service',       'port': 8001, 'test_url': '/api/v1/auth/register'},
+    {'name': 'api-gateway',            'dir': 'api_gateway',            'port': 8000, 'test_url': '/api/v1/auth/register'},
     {'name': 'patient-service',        'dir': 'patient_service',        'port': 8002, 'test_url': '/api/v1/patients'},
     {'name': 'provider-service',       'dir': 'provider_service',       'port': 8003, 'test_url': '/api/v1/specialties'},
     {'name': 'appointment-service',    'dir': 'appointment_service',    'port': 8004, 'test_url': '/api/v1/appointments'},

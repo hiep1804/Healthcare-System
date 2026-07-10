@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { SubscriptionAPI } from '../api.js';
+import { SubscriptionAPI, getErrorMessage } from '../api.js';
 
 export const SubscriptionsPage = () => {
   return `
@@ -41,6 +41,7 @@ export const attachSubscriptionsListeners = async () => {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">Failed to load plans. Is Subscription Service (8009) running?</div>`;
+    const msg = getErrorMessage(e, 'Failed to load plans.');
+    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">${msg}</div>`;
   }
 };

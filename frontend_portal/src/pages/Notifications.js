@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { NotificationAPI } from '../api.js';
+import { NotificationAPI, getErrorMessage } from '../api.js';
 
 export const NotificationsPage = () => {
   return `
@@ -40,6 +40,7 @@ export const attachNotificationsListeners = async () => {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = `<div class="alert alert-error">Failed to load templates. Is Notification Service (8007) running?</div>`;
+    const msg = getErrorMessage(e, 'Failed to load templates.');
+    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">${msg}</div>`;
   }
 };

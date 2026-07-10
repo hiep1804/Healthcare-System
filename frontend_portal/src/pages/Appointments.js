@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { AppointmentAPI } from '../api.js';
+import { AppointmentAPI, getErrorMessage } from '../api.js';
 
 export const AppointmentsPage = () => {
   return `
@@ -40,6 +40,7 @@ export const attachAppointmentsListeners = async () => {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">Failed to load appointments. Is Appointment Service (8004) running?</div>`;
+    const msg = getErrorMessage(e, 'Failed to load appointments.');
+    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">${msg}</div>`;
   }
 };

@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { MedicalRecordAPI, getUser } from '../api.js';
+import { MedicalRecordAPI, getUser, getErrorMessage } from '../api.js';
 
 export const MedicalRecordsPage = () => {
   return `

@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { InsuranceAPI } from '../api.js';
+import { InsuranceAPI, getErrorMessage } from '../api.js';
 
 export const InsurancePage = () => {
   return `
@@ -42,6 +42,7 @@ export const attachInsuranceListeners = async () => {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">Failed to load policies. Is Insurance Service (8010) running?</div>`;
+    const msg = getErrorMessage(e, 'Failed to load policies.');
+    container.innerHTML = `<div class="alert alert-error" style="grid-column: 1 / -1;">${msg}</div>`;
   }
 };
