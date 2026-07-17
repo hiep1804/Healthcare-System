@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
-from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
-    'django-insecure-identity-service-dev-key-change-in-production'
+    'django-insecure-api-gateway-dev-key-change-in-production'
 )
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
@@ -14,33 +13,21 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
     
     # Third-party apps
     'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'drf_spectacular',
 
     # Local apps
-    'apps.authentication',
     'apps.proxy',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'common.middleware.RequestIDMiddleware',
 ]
@@ -56,8 +43,6 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -65,14 +50,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# PostgreSQL Configuration (overriding SQLite)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'identity_db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'healthcare_db'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
-
-AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'vi'
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
@@ -87,37 +75,26 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'common.pagination.StandardResultsSetPagination',
-    'PAGE_SIZE': 20,
+    'UNAUTHENTICATED_USER': None,
+    'UNAUTHENTICATED_TOKEN': None,
     'EXCEPTION_HANDLER': 'common.exceptions.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# Simple JWT
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-}
-
-# Custom Auth User Model
-AUTH_USER_MODEL = 'authentication.User'
-
+JWT_SECRET_KEY = os.environ.get(
+    'JWT_SECRET_KEY',
+    'django-insecure-identity-service-dev-key-change-in-production'
+)
+JWT_ALGORITHM = 'HS256'
 
 # drf-spectacular (Swagger UI)
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Identity Service API',
-    'DESCRIPTION': 'Authentication, Users, Roles, MFA',
+    'TITLE': 'API Gateway',
+    'DESCRIPTION': 'Reverse Proxy and API Gateway',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SWAGGER_UI_SETTINGS': {

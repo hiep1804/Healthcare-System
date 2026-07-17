@@ -10,6 +10,8 @@ class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     role = serializers.ChoiceField(
         choices=['PATIENT', 'DOCTOR'],
@@ -39,6 +41,8 @@ class RegisterSerializer(serializers.Serializer):
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
             phone=validated_data.get('phone', ''),
         )
         # Assign role

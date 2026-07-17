@@ -3,7 +3,6 @@ import { AuthAPI, setToken, setUser, getErrorMessage } from '../api.js';
 
 export const AuthPage = () => {
   return `
-    ${Navbar()}
     <div class="container">
       <div class="glass-panel animate-fade-in" style="max-width: 400px; margin: 4rem auto; padding: 2rem;">
         <h2 style="text-align: center; margin-bottom: 1.5rem; color: var(--primary-blue);">Welcome Back</h2>

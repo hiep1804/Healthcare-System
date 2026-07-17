@@ -13,7 +13,7 @@ export const DashboardPage = () => {
     <div class="container animate-fade-in">
       <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
         <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--primary-blue);">Dashboard</h1>
-        <p class="text-muted">Welcome back, ${user.email}. Here is your healthcare overview.</p>
+        <p class="text-muted">Welcome back, ${user.last_name || user.email}. Here is your healthcare overview.</p>
       </div>
 
       <div class="dashboard-grid">

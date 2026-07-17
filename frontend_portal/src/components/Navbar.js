@@ -25,7 +25,7 @@ export const Navbar = () => {
       <div class="container">
         <a href="#/" class="logo">Health<span>Care</span></a>
         <div class="nav-links">
-          <span>${user.email} <strong style="color:var(--primary-blue); font-size: 0.8em;">[${user.role}]</strong></span>
+          <span>${user.last_name || user.email} <strong style="color:var(--primary-blue); font-size: 0.8em;">[${user.role}]</strong></span>
           <a href="#/" class="${location.hash === '#/' ? 'active' : ''}">Dashboard</a>
           <a href="#/profile" class="${location.hash === '#/profile' ? 'active' : ''}">Profile</a>
           ${isPatient ? `<a href="#/providers" class="${location.hash === '#/providers' ? 'active' : ''}">Find Doctor</a>` : ''}

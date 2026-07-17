@@ -43,6 +43,7 @@ class RegisterView(APIView):
             'user': {
                 'id': str(user.id),
                 'email': user.email,
+                'last_name': user.last_name,
                 'role': roles[0] if roles else None,
             }
         }, status=status.HTTP_201_CREATED)
@@ -87,6 +88,7 @@ class LoginView(APIView):
             'user': {
                 'id': str(user.id),
                 'email': user.email,
+                'last_name': user.last_name,
                 'role': roles[0] if roles else None,
             }
         })
@@ -221,6 +223,7 @@ class MFAVerifyView(APIView):
                 'user': {
                     'id': str(user.id),
                     'email': user.email,
+                    'last_name': user.last_name,
                     'role': roles[0] if roles else None,
                 }
             })

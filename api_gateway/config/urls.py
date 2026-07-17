@@ -1,12 +1,8 @@
-from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from apps.proxy.views import ProxyView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/', include('apps.authentication.urls')),
-
     # Catch-all for API Gateway Proxy
     re_path(r'^api/v1/(?P<service_name>[a-z-]+)(?:/(?P<path>.*))?$', ProxyView.as_view(), name='api-gateway-proxy'),
 

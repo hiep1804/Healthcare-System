@@ -1,0 +1,1 @@
+{"error":{"code":"INVALID","message":"{'username': [ErrorDetail(string='Trường này là bắt buộc.', code='required')]}","details":{"username":["Trường này là bắt buộc."]},"request_id":"91162fda-707f-4e2f-9015-dda83bbe4275"}}

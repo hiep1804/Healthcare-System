@@ -6,6 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SERVICES = [
     {'name': 'API Gateway',            'dir': 'api_gateway',            'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8000']},
+    {'name': 'Identity Service',       'dir': 'identity_service',       'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8001']},
     {'name': 'Patient Service',        'dir': 'patient_service',        'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8002']},
     {'name': 'Provider Service',       'dir': 'provider_service',       'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8003']},
     {'name': 'Appointment Service',    'dir': 'appointment_service',    'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8004']},
