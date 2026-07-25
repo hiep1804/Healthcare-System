@@ -21,7 +21,12 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email đã được sử dụng.")
+            raise serializers.ValidationError("email đã tồn tại")
+        return value
+
+    def validate_phone(self, value):
+        if value and User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("số điện thoại đã tồn tại")
         return value
 
     def validate_username(self, value):
@@ -37,13 +42,17 @@ class RegisterSerializer(serializers.Serializer):
     def create(self, validated_data):
         role_name = validated_data.pop('role', 'PATIENT')
         validated_data.pop('password_confirm')
+        phone = validated_data.get('phone')
+        if not phone:
+            phone = None
+            
         user = User.objects.create_user(
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
-            phone=validated_data.get('phone', ''),
+            phone=phone,
         )
         # Assign role
         role, _ = Role.objects.get_or_create(name=role_name)

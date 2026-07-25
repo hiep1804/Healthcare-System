@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db.models import Q
 from datetime import timedelta, datetime
 from rest_framework import status
 from rest_framework.views import APIView
@@ -100,7 +101,14 @@ class SlotListView(APIView):
             status='FREE', hold_expires_at=None
         )
 
-        slots = TimeSlot.objects.filter(provider_id=provider_id, status='FREE')
+        now_local = timezone.localtime(now)
+        today = now_local.date()
+        current_time = now_local.time()
+
+        slots = TimeSlot.objects.filter(
+            Q(provider_id=provider_id, status='FREE') &
+            (Q(date__gt=today) | Q(date=today, start_time__gt=current_time))
+        )
         serializer = TimeSlotSerializer(slots, many=True)
         return Response({'data': serializer.data})
 
@@ -120,6 +128,17 @@ class HoldSlotView(APIView):
             return Response(
                 {'error': {'code': 'SLOT_NOT_FOUND', 'message': 'Không tìm thấy khung giờ.'}},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Reject slots in the past
+        now_local = timezone.localtime(timezone.now())
+        today = now_local.date()
+        current_time = now_local.time()
+
+        if slot.date < today or (slot.date == today and slot.start_time <= current_time):
+            return Response(
+                {'error': {'code': 'SLOT_IN_PAST', 'message': 'Khung giờ khám đã trôi qua, không thể đặt.'}},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # Release expired holds first
@@ -176,15 +195,40 @@ class AppointmentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        queryset = Appointment.objects.all()
+        # Auto-cancel any uncompleted appointments whose slot end time has passed
+        now_local = timezone.localtime()
+        today = now_local.date()
+        current_time = now_local.time()
 
-        # If patient, filter by patient_id. In production, we'd look up the patient profile via user_id
-        # For simplicity in testing, let's filter if query param provided or custom headers exist.
-        patient_id = request.query_params.get('patient_id')
+        past_uncompleted = Appointment.objects.exclude(
+            status__in=['CANCELLED', 'COMPLETED']
+        ).filter(
+            Q(slot__date__lt=today) |
+            Q(slot__date=today, slot__end_time__lte=current_time)
+        )
+
+        for appt in past_uncompleted:
+            appt.status = 'CANCELLED'
+            appt.save()
+            if appt.slot:
+                appt.slot.status = 'AVAILABLE'
+                appt.slot.save()
+            AppointmentStatusHistory.objects.create(
+                appointment=appt,
+                status='CANCELLED',
+                notes='Lịch hẹn tự động hủy do đã quá giờ kết thúc.',
+                changed_by=request.user.id if request.user and request.user.is_authenticated else None
+            )
+
+        queryset = Appointment.objects.exclude(status='CANCELLED')
+
+        # If patient, filter by patient_id.
+        query_params = getattr(request, 'query_params', getattr(request, 'GET', {}))
+        patient_id = query_params.get('patient_id')
         if patient_id:
             queryset = queryset.filter(patient_id=patient_id)
 
-        provider_id = request.query_params.get('provider_id')
+        provider_id = query_params.get('provider_id')
         if provider_id:
             queryset = queryset.filter(provider_id=provider_id)
 

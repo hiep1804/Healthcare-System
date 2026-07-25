@@ -22,11 +22,16 @@ class ConsultationListCreateView(APIView):
     def get(self, request):
         queryset = Consultation.objects.all()
 
-        patient_id = request.query_params.get('patient_id')
+        query_params = getattr(request, 'query_params', getattr(request, 'GET', {}))
+        appointment_id = query_params.get('appointment_id')
+        if appointment_id:
+            queryset = queryset.filter(appointment_id=appointment_id)
+
+        patient_id = query_params.get('patient_id')
         if patient_id:
             queryset = queryset.filter(patient_id=patient_id)
 
-        provider_id = request.query_params.get('provider_id')
+        provider_id = query_params.get('provider_id')
         if provider_id:
             queryset = queryset.filter(provider_id=provider_id)
 
@@ -34,6 +39,12 @@ class ConsultationListCreateView(APIView):
         return Response({'data': serializer.data})
 
     def post(self, request):
+        appointment_id = request.data.get('appointment_id')
+        if appointment_id:
+            existing = Consultation.objects.filter(appointment_id=appointment_id).first()
+            if existing:
+                return Response(ConsultationSerializer(existing).data, status=status.HTTP_200_OK)
+
         serializer = ConsultationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         consultation = serializer.save()
@@ -158,13 +169,10 @@ class PrescriptionCreateGetView(APIView):
     def get(self, request, consultation_id):
         try:
             prescription = Prescription.objects.get(consultation_id=consultation_id)
+            serializer = PrescriptionSerializer(prescription)
+            return Response(serializer.data)
         except Prescription.DoesNotExist:
-            return Response(
-                {'error': {'code': 'PRESCRIPTION_NOT_FOUND', 'message': 'Không tìm thấy đơn thuốc.'}},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        serializer = PrescriptionSerializer(prescription)
-        return Response(serializer.data)
+            return Response({'id': None, 'notes': '', 'items': []}, status=status.HTTP_200_OK)
 
     def post(self, request, consultation_id):
         try:

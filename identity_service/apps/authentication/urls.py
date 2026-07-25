@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     RegisterView, LoginView, LogoutView, RefreshTokenView,
     MFASetupView, MFAVerifyView,
-    CurrentUserView, UserDetailView, UserStatusView, AssignRoleView,
+    CurrentUserView, UserDetailView, UserStatusView, AssignRoleView, UserListView,
 )
 
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     path('auth/mfa/verify', MFAVerifyView.as_view(), name='mfa-verify'),
 
     # User management endpoints
+    path('users', UserListView.as_view(), name='user-list'),
     path('users/me', CurrentUserView.as_view(), name='user-me'),
     path('users/<uuid:user_id>', UserDetailView.as_view(), name='user-detail'),
     path('users/<uuid:user_id>/status', UserStatusView.as_view(), name='user-status'),

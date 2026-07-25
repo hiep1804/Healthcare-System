@@ -320,3 +320,13 @@ class AssignRoleView(APIView):
             'message': f'Đã gán role {role_name} cho {user.email}.',
             'user': UserSerializer(user).data,
         }, status=status.HTTP_201_CREATED)
+
+
+class UserListView(APIView):
+    """GET /api/v1/users - List all users (Admin only)."""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        users = User.objects.all().order_by('-created_at')
+        serializer = UserSerializer(users, many=True)
+        return Response({'results': serializer.data})

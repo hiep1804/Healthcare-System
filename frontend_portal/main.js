@@ -12,6 +12,9 @@ import { InsurancePage, attachInsuranceListeners } from './src/pages/Insurance.j
 import { AuditPage, attachAuditListeners } from './src/pages/Audit.js';
 import { AdminUsersPage, attachAdminUsersListeners } from './src/pages/AdminUsers.js';
 import { ProfilePage, attachProfileListeners } from './src/pages/Profile.js';
+import { PatientHistoryPage, attachPatientHistoryListeners } from './src/pages/PatientHistory.js';
+import { ApplyDoctorPage, attachApplyDoctorListeners } from './src/pages/ApplyDoctor.js';
+import { DoctorSchedulePage, attachDoctorScheduleListeners } from './src/pages/DoctorSchedule.js';
 import { removeToken } from './src/api.js';
 
 // --- ROUTER ---
@@ -29,6 +32,9 @@ const routes = {
   '/audit': { render: AuditPage, after: attachAuditListeners },
   '/admin-users': { render: AdminUsersPage, after: attachAdminUsersListeners },
   '/profile': { render: ProfilePage, after: attachProfileListeners },
+  '/patient-history': { render: PatientHistoryPage, after: attachPatientHistoryListeners },
+  '/apply-doctor': { render: ApplyDoctorPage, after: attachApplyDoctorListeners },
+  '/doctor-schedule': { render: DoctorSchedulePage, after: attachDoctorScheduleListeners },
 };
 
 const router = async () => {
@@ -40,9 +46,9 @@ const router = async () => {
 
   // Define allowed routes per role based on the Navbar logic
   const allowedRoutes = {
-    'PATIENT': ['/', '/profile', '/providers', '/appointments', '/medical-records', '/consultations', '/insurance', '/subscriptions'],
-    'DOCTOR': ['/', '/profile', '/appointments', '/consultations'],
-    'ADMIN': ['/', '/profile', '/appointments', '/consultations', '/insurance', '/subscriptions', '/notifications', '/audit', '/admin-users']
+    'PATIENT': ['/', '/profile', '/providers', '/appointments', '/medical-records', '/consultations', '/subscriptions', '/apply-doctor'],
+    'DOCTOR': ['/', '/profile', '/appointments', '/consultations', '/patient-history', '/doctor-schedule'],
+    'ADMIN': ['/', '/profile', '/providers', '/subscriptions', '/insurance', '/notifications', '/audit', '/admin-users', '/patient-history']
   };
 
   const route = routes[path];

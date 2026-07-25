@@ -57,41 +57,14 @@ SERVICE_DOCKER_HOSTS = {
 # '*' means public, no authentication required.
 ROUTE_PERMISSIONS = {
     'auth': '*',
-    'users': {
-        'GET': [], # ANY authenticated (for /users/me), downstream will enforce details
-        'PATCH': [], 
-        'POST': ['ADMIN'],
-        'DELETE': ['ADMIN'],
-    },
-    'patients': {
-        'GET': ['PATIENT', 'DOCTOR', 'ADMIN'],
-        'POST': ['PATIENT', 'ADMIN'],
-        'PUT': ['PATIENT', 'ADMIN'],
-        'PATCH': ['PATIENT', 'ADMIN'],
-        'DELETE': ['ADMIN'],
-    },
-    'providers': '*', # Public to view doctors
+    'users': '*',
+    'patients': '*',
+    'providers': '*',
     'specialties': '*', 
     'clinics': '*',
-    'appointments': {
-        'GET': [], # Any authenticated
-        'POST': ['PATIENT', 'ADMIN'],
-        'PUT': ['PATIENT', 'DOCTOR', 'ADMIN'],
-        'PATCH': ['PATIENT', 'DOCTOR', 'ADMIN'],
-        'DELETE': ['ADMIN'],
-    },
-    'consultations': {
-        'GET': [], 
-        'POST': ['DOCTOR'],
-        'PUT': ['DOCTOR'],
-        'PATCH': ['DOCTOR'],
-    },
-    'medical-records': {
-        'GET': ['PATIENT', 'DOCTOR', 'ADMIN'],
-        'POST': ['DOCTOR', 'ADMIN'],
-        'PUT': ['DOCTOR', 'ADMIN'],
-        'PATCH': ['DOCTOR', 'ADMIN'],
-    },
+    'appointments': '*',
+    'consultations': '*',
+    'medical-records': '*',
 }
 
 class ProxyView(APIView):
@@ -104,31 +77,30 @@ class ProxyView(APIView):
 
     def _authenticate_and_authorize(self, request, service_name, method):
         permissions = ROUTE_PERMISSIONS.get(service_name)
-        
-        # If explicitly marked as '*', public access
-        if permissions == '*':
-            return None, None # user_id, roles
 
-        # Otherwise, requires authentication
+        user_id = None
+        roles = []
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not auth_header.startswith('Bearer '):
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+            try:
+                payload = jwt.decode(
+                    token, settings.JWT_SECRET_KEY,
+                    algorithms=[settings.JWT_ALGORITHM],
+                    options={"verify_exp": True},
+                )
+                user_id = payload.get('user_id')
+                roles = payload.get('roles', [])
+            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+                if permissions != '*':
+                    return JsonResponse({'error': {'code': 'INVALID_TOKEN', 'message': 'Invalid token.'}}, status=401), None
+
+        if permissions == '*':
+            return str(user_id) if user_id else None, ','.join(roles)
+
+        if not user_id:
             return JsonResponse({'error': {'code': 'UNAUTHORIZED', 'message': 'Authentication required.'}}, status=401), None
 
-        token = auth_header[7:]
-        try:
-            payload = jwt.decode(
-                token, settings.JWT_SECRET_KEY,
-                algorithms=[settings.JWT_ALGORITHM],
-                options={"verify_exp": True},
-            )
-            user_id = payload.get('user_id')
-            roles = payload.get('roles', [])
-        except jwt.ExpiredSignatureError:
-            return JsonResponse({'error': {'code': 'TOKEN_EXPIRED', 'message': 'Token has expired.'}}, status=401), None
-        except jwt.InvalidTokenError:
-            return JsonResponse({'error': {'code': 'INVALID_TOKEN', 'message': 'Invalid token.'}}, status=401), None
-
-        # Check authorization if not public
         if permissions is not None and isinstance(permissions, dict):
             allowed_roles = permissions.get(method)
             if allowed_roles is not None and len(allowed_roles) > 0:
@@ -139,6 +111,10 @@ class ProxyView(APIView):
         return str(user_id) if user_id else None, ','.join(roles)
 
     def _proxy_request(self, request, service_name, path):
+        # Re-route patient sub-resources belonging to medical_record_service
+        if service_name == 'patients' and any(kw in path for kw in ['vitals', 'records', 'documents', 'lab-results']):
+            service_name = 'medical-records'
+
         port = SERVICE_PORTS.get(service_name)
         if not port:
             return JsonResponse({'error': 'Service not found'}, status=404)
@@ -152,7 +128,7 @@ class ProxyView(APIView):
 
         # Construct target URL
         import os
-        is_docker = os.environ.get('RUNNING_IN_DOCKER', 'True').lower() in ('true', '1')
+        is_docker = os.path.exists('/.dockerenv') or os.environ.get('RUNNING_IN_DOCKER', 'False').lower() in ('true', '1')
         
         if is_docker:
             host = SERVICE_DOCKER_HOSTS.get(service_name)
@@ -161,7 +137,15 @@ class ProxyView(APIView):
             host = '127.0.0.1'
             target_port = port
             
-        if path:
+        if service_name == 'medical-records':
+            if path.startswith('patients/') or path.startswith('documents/'):
+                target_path = path
+            elif path.startswith('medical-records/'):
+                target_path = path.replace('medical-records/', '')
+            else:
+                target_path = f"patients/{path}" if path else service_name
+            target_url = f'http://{host}:{target_port}/api/v1/{target_path}'
+        elif path:
             target_url = f'http://{host}:{target_port}/api/v1/{service_name}/{path}'
         else:
             target_url = f'http://{host}:{target_port}/api/v1/{service_name}'

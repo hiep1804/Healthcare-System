@@ -36,4 +36,4 @@ class VitalsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vitals
         fields = '__all__'
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'patient_id', 'recorded_by', 'created_at', 'recorded_at']
