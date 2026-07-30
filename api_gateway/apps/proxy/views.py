@@ -26,6 +26,7 @@ SERVICE_PORTS = {
     'subscriptions': 8009,
     'insurance-policies': 8010,
     'claims': 8010,
+    'cds': 8011,
 }
 
 SERVICE_DOCKER_HOSTS = {
@@ -49,6 +50,7 @@ SERVICE_DOCKER_HOSTS = {
     'subscriptions': 'subscription_service',
     'insurance-policies': 'insurance_service',
     'claims': 'insurance_service',
+    'cds': 'ai_cds_service',
 }
 
 # Route to roles mapping
@@ -65,6 +67,7 @@ ROUTE_PERMISSIONS = {
     'appointments': '*',
     'consultations': '*',
     'medical-records': '*',
+    'cds': '*',
 }
 
 class ProxyView(APIView):

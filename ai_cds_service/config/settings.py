@@ -5,11 +5,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
-    'django-insecure-medical_record_service-dev-key-change-in-production'
+    'django-insecure-ai_cds_service-dev-key-change-in-production'
 )
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'corsheaders',
-    'apps.records',
+    'apps.cds',
 ]
 
 MIDDLEWARE = [
@@ -56,17 +56,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# PostgreSQL Configuration (overriding SQLite)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'healthcare_db'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+is_running_in_docker = os.path.exists('/.dockerenv') or os.environ.get('RUNNING_IN_DOCKER', 'False').lower() in ('true', '1')
+
+if is_running_in_docker:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'healthcare_db'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+            'HOST': os.environ.get('DB_HOST', 'postgres'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'ai_cds_db.sqlite3',
+        }
+    }
 
 LANGUAGE_CODE = 'vi'
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
@@ -97,11 +106,11 @@ JWT_SECRET_KEY = os.environ.get(
 )
 JWT_ALGORITHM = 'HS256'
 
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
-# drf-spectacular (Swagger UI)
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Medical Record Service API',
-    'DESCRIPTION': 'Health Records, Documents, Lab Results, Vitals',
+    'TITLE': 'AI CDS Service API',
+    'DESCRIPTION': 'Clinical Decision Support AI Assistant, Drug Interactions, Diagnosis Support',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SWAGGER_UI_SETTINGS': {

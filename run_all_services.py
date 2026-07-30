@@ -16,6 +16,7 @@ SERVICES = [
     {'name': 'Audit Service',          'dir': 'audit_service',          'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8008']},
     {'name': 'Subscription Service',   'dir': 'subscription_service',   'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8009']},
     {'name': 'Insurance Service',      'dir': 'insurance_service',      'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8010']},
+    {'name': 'AI CDS Service',         'dir': 'ai_cds_service',         'cmd': ['cmd.exe', '/k', sys.executable, 'manage.py', 'runserver', '8011']},
     {'name': 'Frontend Portal',        'dir': 'frontend_portal',        'cmd': ['cmd.exe', '/k', 'npm', 'run', 'dev', '--', '--port', '5173']},
 ]
 

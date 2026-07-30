@@ -214,3 +214,19 @@ export const InsuranceAPI = {
   getClaims: () => apiFetch('insurance', '/claims'),
   createClaim: (data) => apiFetch('insurance', '/claims', { method: 'POST', body: JSON.stringify(data) })
 };
+
+// 11. AI CDS Service
+export const CDSAPI = {
+  createConversation: (data) => apiFetch('cds', '/cds/conversations', { method: 'POST', body: JSON.stringify(data) }),
+  getConversation: (id) => apiFetch('cds', `/cds/conversations/${id}`),
+  sendMessage: (id, content) => apiFetch('cds', `/cds/conversations/${id}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  actOnRecommendation: (recId, action, doctor_note = '') => apiFetch('cds', `/cds/recommendations/${recId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action, doctor_note })
+  }),
+  checkDrugInteractions: (drug_names, patient_allergies = []) => apiFetch('cds', '/cds/drug-interactions', {
+    method: 'POST',
+    body: JSON.stringify({ drug_names, patient_allergies })
+  })
+};
+

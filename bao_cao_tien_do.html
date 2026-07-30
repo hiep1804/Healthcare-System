@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Báo cáo tiến độ tuần - Nhóm Healthcare Marketplace</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Times New Roman', serif; font-size: 13pt; color: #000; line-height: 1.6; padding: 30px 40px; }
+  
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .underline { text-decoration: underline; }
+  
+  .header-top { text-align: center; margin-bottom: 10px; font-size: 12pt; }
+  .header-top .school { text-transform: uppercase; font-weight: bold; }
+  
+  h1 { font-size: 18pt; text-align: center; margin: 20px 0 6px 0; text-transform: uppercase; }
+  h2 { font-size: 14pt; margin: 16px 0 6px 0; }
+  h3 { font-size: 13pt; margin: 10px 0 4px 0; }
+
+  .info-table { margin: 10px auto; font-size: 12pt; }
+  .info-table td { padding: 2px 10px; }
+  .info-table td:first-child { font-weight: bold; }
+
+  table.main { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11pt; }
+  table.main th, table.main td { border: 1px solid #000; padding: 5px 8px; vertical-align: top; }
+  table.main th { background: #e8e8e8; font-weight: bold; text-align: center; }
+  
+  .member-section { margin: 12px 0; page-break-inside: avoid; }
+  .member-name { font-weight: bold; font-size: 13pt; margin-bottom: 4px; }
+  
+  ul { margin-left: 20px; }
+  ul li { margin: 2px 0; }
+  
+  .sign-area { margin-top: 30px; display: flex; justify-content: space-between; }
+  .sign-box { text-align: center; width: 45%; }
+  .sign-box .date { font-style: italic; font-size: 11pt; }
+  .sign-box .name { margin-top: 60px; font-weight: bold; }
+
+  .footer { text-align: center; margin-top: 20px; font-size: 10pt; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
+  .note { font-style: italic; font-size: 11pt; margin: 6px 0; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header-top">
+  <div class="school">TRƯỜNG ĐẠI HỌC ...</div>
+  <div>Khoa Công nghệ Thông tin</div>
+</div>
+
+<h1>Báo cáo tiến độ tuần</h1>
+<p class="center" style="font-size: 14pt; margin-bottom: 10px;">Đề tài: <b>Healthcare Marketplace – Hệ thống Y tế Microservices</b></p>
+
+<table class="info-table">
+  <tr><td>Tuần báo cáo:</td><td>20/07/2026 – 25/07/2026</td></tr>
+  <tr><td>Số thành viên:</td><td>5 người</td></tr>
+  <tr><td>Ngày lập:</td><td>25/07/2026</td></tr>
+</table>
+
+<hr style="margin: 14px 0;">
+
+<!-- I. Tổng quan -->
+<h2>I. Tổng quan công việc tuần này</h2>
+<p>Trong tuần này, nhóm tập trung hoàn thiện <b>toàn bộ luồng nghiệp vụ chính</b> của hệ thống: đặt lịch khám, tư vấn bác sĩ, hồ sơ bệnh án, quản lý bác sĩ và giao diện người dùng. Tổng cộng đã thay đổi <b>52 files</b>, thêm mới <b>~4,089 dòng code</b>, sửa/xóa <b>~495 dòng</b>.</p>
+
+<!-- II. Phân công & kết quả -->
+<h2>II. Phân công công việc và kết quả</h2>
+
+<!-- Thành viên 1 -->
+<div class="member-section">
+<table class="main">
+  <tr><th colspan="4" style="background:#d0d0d0; font-size: 12pt;">Thành viên 1 – API Gateway & Identity Service</th></tr>
+  <tr><th style="width:5%">STT</th><th style="width:45%">Công việc</th><th style="width:30%">File liên quan</th><th style="width:20%">Trạng thái</th></tr>
+  <tr><td>1</td><td>Refactor cơ chế xác thực JWT: hỗ trợ optional auth trên route public, truyền user info xuống downstream</td><td>api_gateway/apps/proxy/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>2</td><td>Thêm re-routing cho Medical Record sub-resources (vitals, records, documents, lab-results)</td><td>api_gateway/apps/proxy/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>3</td><td>Fix logic phát hiện môi trường Docker</td><td>api_gateway/apps/proxy/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>4</td><td>Thêm API liệt kê tất cả users (Admin only)</td><td>identity_service/apps/authentication/views.py, urls.py, serializers.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>5</td><td>Migration: thay đổi field phone trong User model</td><td>identity_service/apps/authentication/models.py, migrations/</td><td>Hoàn thành ✓</td></tr>
+</table>
+</div>
+
+<!-- Thành viên 2 -->
+<div class="member-section">
+<table class="main">
+  <tr><th colspan="4" style="background:#d0d0d0; font-size: 12pt;">Thành viên 2 – Appointment Service</th></tr>
+  <tr><th style="width:5%">STT</th><th style="width:45%">Công việc</th><th style="width:30%">File liên quan</th><th style="width:20%">Trạng thái</th></tr>
+  <tr><td>1</td><td>Lọc slot quá hạn: chỉ trả về slot trong tương lai khi lấy danh sách slot trống</td><td>appointment_service/apps/appointments/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>2</td><td>Chặn đặt giữ (hold) slot đã qua giờ, trả lỗi SLOT_IN_PAST</td><td>appointment_service/apps/appointments/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>3</td><td>Tự động hủy lịch hẹn chưa hoàn thành đã quá giờ + ghi lịch sử trạng thái</td><td>appointment_service/apps/appointments/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>4</td><td>Ẩn lịch hẹn CANCELLED khỏi danh sách mặc định</td><td>appointment_service/apps/appointments/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>5</td><td>Viết 3 Unit Tests: lọc slot quá hạn, re-book sau hủy, auto-cancel</td><td>appointment_service/apps/appointments/tests.py (114 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>6</td><td>Migration: thay đổi field slot trong Appointment model</td><td>appointment_service/apps/appointments/models.py, migrations/</td><td>Hoàn thành ✓</td></tr>
+</table>
+</div>
+
+<!-- Thành viên 3 -->
+<div class="member-section">
+<table class="main">
+  <tr><th colspan="4" style="background:#d0d0d0; font-size: 12pt;">Thành viên 3 – Consultation Service & Provider Service</th></tr>
+  <tr><th style="width:5%">STT</th><th style="width:45%">Công việc</th><th style="width:30%">File liên quan</th><th style="width:20%">Trạng thái</th></tr>
+  <tr><td>1</td><td>Hỗ trợ filter consultation theo appointment_id</td><td>consultation_service/apps/consultations/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>2</td><td>Chống tạo trùng consultation (idempotent)</td><td>consultation_service/apps/consultations/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>3</td><td>Trả response rỗng hợp lệ khi chưa có đơn thuốc (thay vì 404)</td><td>consultation_service/apps/consultations/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>4</td><td>Thêm default values cho PrescriptionItem serializer</td><td>consultation_service/apps/consultations/serializers.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>5</td><td>Mở quyền đăng ký bác sĩ, mặc định PENDING_VERIFICATION</td><td>provider_service/apps/providers/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>6</td><td>Thêm API GET licenses, filter provider theo status, auto-verify cho Admin</td><td>provider_service/apps/providers/views.py, models.py</td><td>Hoàn thành ✓</td></tr>
+</table>
+</div>
+
+<!-- Thành viên 4 -->
+<div class="member-section">
+<table class="main">
+  <tr><th colspan="4" style="background:#d0d0d0; font-size: 12pt;">Thành viên 4 – Patient Service, Medical Record Service & Tài liệu</th></tr>
+  <tr><th style="width:5%">STT</th><th style="width:45%">Công việc</th><th style="width:30%">File liên quan</th><th style="width:20%">Trạng thái</th></tr>
+  <tr><td>1</td><td>Thêm API liệt kê bệnh nhân (GET) có phân trang</td><td>patient_service/apps/patients/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>2</td><td>Fix Vitals API: mapping field temperature_celsius → temperature_c</td><td>medical_record_service/apps/records/views.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>3</td><td>Bảo vệ read-only fields trong VitalsSerializer</td><td>medical_record_service/apps/records/serializers.py</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>4</td><td>Viết tài liệu phân quyền: 4 vai trò chính, vai trò mở rộng, biểu đồ tương tác</td><td>ROLES_README.md (92 dòng)</td><td>Hoàn thành ✓</td></tr>
+</table>
+</div>
+
+<!-- Thành viên 5 -->
+<div class="member-section">
+<table class="main">
+  <tr><th colspan="4" style="background:#d0d0d0; font-size: 12pt;">Thành viên 5 – Frontend Portal</th></tr>
+  <tr><th style="width:5%">STT</th><th style="width:45%">Công việc</th><th style="width:30%">File liên quan</th><th style="width:20%">Trạng thái</th></tr>
+  <tr><td>1</td><td>Tạo trang Đăng ký Bác sĩ (form đăng ký + upload giấy phép)</td><td>frontend_portal/src/pages/ApplyDoctor.js (+148 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>2</td><td>Tạo trang Lịch làm việc Bác sĩ</td><td>frontend_portal/src/pages/DoctorSchedule.js (+190 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>3</td><td>Tạo trang Lịch sử Bệnh nhân (lịch sử khám, chỉ số sức khỏe)</td><td>frontend_portal/src/pages/PatientHistory.js (+737 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>4</td><td>Nâng cấp trang Tư vấn: ghi chú lâm sàng, chẩn đoán, kê đơn thuốc</td><td>frontend_portal/src/pages/Consultations.js (+675 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>5</td><td>Nâng cấp trang Bác sĩ: tìm kiếm, đặt khám, Admin duyệt</td><td>frontend_portal/src/pages/Providers.js (+477 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>6</td><td>Nâng cấp trang Lịch hẹn: chọn slot → giữ chỗ → xác nhận</td><td>frontend_portal/src/pages/Appointments.js (+324 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>7</td><td>Nâng cấp các trang: MedicalRecords, Insurance, Subscriptions, Notifications, Profile, AdminUsers, Dashboard</td><td>7 files frontend (+1,034 dòng)</td><td>Hoàn thành ✓</td></tr>
+  <tr><td>8</td><td>Cập nhật API layer, Navbar, Router, Auth, Register</td><td>api.js, Navbar.js, main.js, Auth.js, Register.js</td><td>Hoàn thành ✓</td></tr>
+</table>
+</div>
+
+<!-- III. Tổng kết -->
+<h2>III. Tổng kết</h2>
+<table class="main">
+  <tr><th>Thành viên</th><th>Phần việc</th><th>Số task</th><th>Kết quả</th></tr>
+  <tr><td>Thành viên 1</td><td>API Gateway & Identity Service</td><td>5</td><td>5/5 hoàn thành</td></tr>
+  <tr><td>Thành viên 2</td><td>Appointment Service</td><td>6</td><td>6/6 hoàn thành</td></tr>
+  <tr><td>Thành viên 3</td><td>Consultation & Provider Service</td><td>6</td><td>6/6 hoàn thành</td></tr>
+  <tr><td>Thành viên 4</td><td>Patient, Medical Record & Tài liệu</td><td>4</td><td>4/4 hoàn thành</td></tr>
+  <tr><td>Thành viên 5</td><td>Frontend Portal</td><td>8</td><td>8/8 hoàn thành</td></tr>
+  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Tổng cộng</td><td style="font-weight:bold;">29</td><td style="font-weight:bold;">29/29 (100%)</td></tr>
+</table>
+
+<!-- IV. Kế hoạch tuần sau -->
+<h2>IV. Kế hoạch tuần tiếp theo</h2>
+<table class="main">
+  <tr><th style="width:5%">STT</th><th style="width:55%">Công việc</th><th style="width:20%">Phân công</th><th style="width:20%">Ưu tiên</th></tr>
+  <tr><td>1</td><td>Bổ sung phân quyền chi tiết tại API Gateway</td><td>Thành viên 1</td><td>Cao</td></tr>
+  <tr><td>2</td><td>Viết thêm unit tests cho các service còn lại</td><td>Thành viên 2, 3</td><td>Cao</td></tr>
+  <tr><td>3</td><td>Tích hợp Payment Gateway (thanh toán)</td><td>Thành viên 3, 4</td><td>Trung bình</td></tr>
+  <tr><td>4</td><td>UI/UX polish và responsive design</td><td>Thành viên 5</td><td>Trung bình</td></tr>
+  <tr><td>5</td><td>Deploy lên Docker + test tích hợp</td><td>Cả nhóm</td><td>Cao</td></tr>
+</table>
+
+<!-- Ký tên -->
+<div class="sign-area">
+  <div class="sign-box">
+    <div class="date">Ngày ... tháng ... năm 2026</div>
+    <div><b>Giảng viên hướng dẫn</b></div>
+    <div class="name">(Ký và ghi rõ họ tên)</div>
+  </div>
+  <div class="sign-box">
+    <div class="date">Ngày 25 tháng 07 năm 2026</div>
+    <div><b>Nhóm trưởng</b></div>
+    <div class="name">(Ký và ghi rõ họ tên)</div>
+  </div>
+</div>
+
+</body>
+</html>

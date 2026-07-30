@@ -1,4 +1,4 @@
-import './style.css';
+import './src/style.css';
 import { AuthPage, attachAuthListeners } from './src/pages/Auth.js';
 import { RegisterPage, attachRegisterListeners } from './src/pages/Register.js';
 import { DashboardPage, attachDashboardListeners } from './src/pages/Dashboard.js';
@@ -40,6 +40,14 @@ const routes = {
 const router = async () => {
   const path = window.location.hash.slice(1) || '/';
   const app = document.getElementById('app');
+
+  // Remove persistent AI CDS Chatbot widget if navigating away
+  const existingAiCdsDrawer = document.getElementById('aiCdsDrawer');
+  const existingMinFab = document.getElementById('aiCdsMinFab');
+  if (path !== '/consultations') {
+    if (existingAiCdsDrawer) existingAiCdsDrawer.remove();
+    if (existingMinFab) existingMinFab.remove();
+  }
   
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const role = user ? user.role : null;

@@ -11,7 +11,8 @@ SERVICES = [
     'notification_service',
     'audit_service',
     'subscription_service',
-    'insurance_service'
+    'insurance_service',
+    'ai_cds_service'
 ]
 
 def run():

@@ -132,5 +132,33 @@ services:
     depends_on:
       - postgres
 
+  ai_cds_service:
+    build: ./ai_cds_service
+    ports:
+      - "8011:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./ai_cds_service:/app
+    depends_on:
+      - postgres
+      - neo4j
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: tttn-neo4j-1
+    ports:
+      - "7474:7474" # Web HTTP Console
+      - "7687:7687" # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/healthcare_neo4j_2026
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      - NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:7687
+      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+    volumes:
+      - neo4j_data:/data
+
 volumes:
   postgres_data:
+  neo4j_data:
