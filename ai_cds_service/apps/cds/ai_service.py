@@ -5,6 +5,11 @@ import requests
 from django.conf import settings
 from .models import DrugInteraction, DrugAllergenCrossRef, Drug
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -102,73 +107,95 @@ class AICDSService:
 
         return context
 
-    @staticmethod
-    def build_prompt_context_string(patient_context):
-        """Build text summary of patient context for Gemini prompt"""
-        if not patient_context:
-            return ""
+    @classmethod
+    def build_prompt_context_string(cls, patient_context, user_message_text=""):
+        """Build text summary of patient context + Neo4j Graph Knowledge for Gemini prompt"""
+        from .graph_db import Neo4jGraphDB
+        lines = []
 
-        allergies = patient_context.get('allergies', [])
-        conditions = patient_context.get('conditions', [])
-        medications = patient_context.get('medications', [])
-        vitals = patient_context.get('recent_vitals', {})
+        if patient_context:
+            allergies = patient_context.get('allergies', [])
+            conditions = patient_context.get('conditions', [])
+            medications = patient_context.get('medications', [])
+            vitals = patient_context.get('recent_vitals', {})
 
-        if not allergies and not conditions and not medications and not vitals:
-            return ""
+            if allergies or conditions or medications or vitals:
+                lines.append("=== HỒ SƠ BỆNH NHÂN THỜI GIAN THỰC ===")
+                if allergies:
+                    lines.append("⚠️ DỊ ỨNG:")
+                    for a in allergies:
+                        lines.append(f"  - {a.get('allergen')}: {a.get('reaction', 'Không rõ')}")
 
-        lines = ["=== HỒ SƠ BỆNH NHÂN ==="]
-        if allergies:
-            lines.append("⚠️ DỊ ỨNG:")
-            for a in allergies:
-                lines.append(f"  - {a.get('allergen')}: {a.get('reaction', 'Không rõ')}")
+                if conditions:
+                    lines.append("🩺 BỆNH NỀN:")
+                    for c in conditions:
+                        lines.append(f"  - {c.get('condition_name')}")
 
-        if conditions:
-            lines.append("🩺 BỆNH NỀN:")
-            for c in conditions:
-                lines.append(f"  - {c.get('condition_name')}")
+                if medications:
+                    lines.append("💊 THUỐC ĐANG DÙNG:")
+                    for m in medications:
+                        lines.append(f"  - {m.get('drug_name')}")
 
-        if medications:
-            lines.append("💊 THUỐC ĐANG DÙNG:")
-            for m in medications:
-                lines.append(f"  - {m.get('drug_name')}")
+                if vitals:
+                    sys = vitals.get('blood_pressure_systolic')
+                    dia = vitals.get('blood_pressure_diastolic')
+                    hr = vitals.get('heart_rate')
+                    temp = vitals.get('temperature_c') or vitals.get('temperature_celsius')
+                    v_str = []
+                    if sys and dia: v_str.append(f"Huyết áp: {sys}/{dia} mmHg")
+                    if hr: v_str.append(f"Nhịp tim: {hr} BPM")
+                    if temp: v_str.append(f"Nhiệt độ: {temp} °C")
+                    if v_str:
+                        lines.append(f"📊 CHỈ SỐ SINH TỒN: {', '.join(v_str)}")
+                lines.append("=====================================\n")
 
-        if vitals:
-            sys = vitals.get('blood_pressure_systolic')
-            dia = vitals.get('blood_pressure_diastolic')
-            hr = vitals.get('heart_rate')
-            temp = vitals.get('temperature_c') or vitals.get('temperature_celsius')
-            v_str = []
-            if sys and dia: v_str.append(f"Huyết áp: {sys}/{dia} mmHg")
-            if hr: v_str.append(f"Nhịp tim: {hr} BPM")
-            if temp: v_str.append(f"Nhiệt độ: {temp} °C")
-            if v_str:
-                lines.append(f"📊 CHỈ SỐ: {', '.join(v_str)}")
+        # Query Neo4j Graph Database Grounding Knowledge for user message
+        if user_message_text:
+            user_lower = user_message_text.lower()
+            known_drugs = Drug.objects.all()
+            found_drugs = [d for d in known_drugs if d.name.lower() in user_lower]
+            if len(found_drugs) >= 2:
+                d1, d2 = found_drugs[0], found_drugs[1]
+                neo_interactions = Neo4jGraphDB.check_drug_interaction(d1.name, d2.name)
+                if neo_interactions and len(neo_interactions) > 0:
+                    inter = neo_interactions[0]
+                    lines.append("=== TRI THỨC ĐỒ THỊ Y KHOA NEO4J (GRAPHRAG GROUNDING) ===")
+                    lines.append(f"⚠️ CẢNH BÁO TƯƠNG TÁC THUỐC (Mức độ: {inter['severity']}):")
+                    lines.append(f"  - Thuốc 1: {inter['drug_a']} | Thuốc 2: {inter['drug_b']}")
+                    lines.append(f"  - Cơ chế dược lý: {inter['mechanism']}")
+                    lines.append(f"  - Hậu quả lâm sàng: {inter['clinical_effect']}")
+                    lines.append(f"  - Khuyên dùng: {inter['recommendation']}")
+                    lines.append("=========================================================\n")
 
-        lines.append("========================\n")
         return "\n".join(lines)
 
     @classmethod
     def generate_ai_response(cls, conversation, user_message_text, history_messages=None):
-        """Gửi câu hỏi tới Gemini API hoặc dùng Fallback Mode"""
+        """Gửi câu hỏi tới Gemini API (đã nạp dữ liệu Neo4j GraphRAG) hoặc Fallback Mode"""
         api_key = getattr(settings, 'GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
 
         patient_context = conversation.patient_context_snapshot or {}
-        context_str = cls.build_prompt_context_string(patient_context)
+        context_str = cls.build_prompt_context_string(patient_context, user_message_text)
         
         if context_str:
             full_user_input = f"{context_str}\nBác sĩ hỏi: {user_message_text}"
         else:
             full_user_input = user_message_text
 
-        if api_key:
+        if api_key and genai is not None:
             try:
-                import google.generativeai as genai
                 genai.configure(api_key=api_key)
 
-                model = genai.GenerativeModel(
-                    model_name='gemini-1.5-flash',
-                    system_instruction=DEFAULT_SYSTEM_PROMPT
-                )
+                try:
+                    model = genai.GenerativeModel(
+                        model_name='gemini-1.5-flash',
+                        system_instruction=DEFAULT_SYSTEM_PROMPT
+                    )
+                except Exception:
+                    model = genai.GenerativeModel(
+                        model_name='gemini-pro',
+                        system_instruction=DEFAULT_SYSTEM_PROMPT
+                    )
 
                 contents = []
                 if history_messages:
