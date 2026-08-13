@@ -183,37 +183,38 @@ class AICDSService:
             full_user_input = user_message_text
 
         if api_key and genai is not None:
-            try:
-                genai.configure(api_key=api_key)
+            genai.configure(api_key=api_key)
 
+            contents = []
+            if history_messages:
+                for msg in history_messages:
+                    if msg.role == 'doctor':
+                        contents.append({'role': 'user', 'parts': [msg.content]})
+                    elif msg.role == 'assistant':
+                        contents.append({'role': 'model', 'parts': [msg.content]})
+
+            contents.append({'role': 'user', 'parts': [full_user_input]})
+
+            # Try available modern Gemini model names in order
+            model_candidates = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash']
+            last_error = None
+
+            for m_name in model_candidates:
                 try:
                     model = genai.GenerativeModel(
-                        model_name='gemini-1.5-flash',
+                        model_name=m_name,
                         system_instruction=DEFAULT_SYSTEM_PROMPT
                     )
-                except Exception:
-                    model = genai.GenerativeModel(
-                        model_name='gemini-pro',
-                        system_instruction=DEFAULT_SYSTEM_PROMPT
-                    )
+                    response = model.generate_content(contents)
+                    raw_text = response.text
+                    logger.info(f"Successfully generated CDS response using model: {m_name}")
+                    return cls._parse_ai_output(raw_text)
+                except Exception as ex:
+                    last_error = ex
+                    logger.warning(f"Failed to generate response using model {m_name}: {ex}")
 
-                contents = []
-                if history_messages:
-                    for msg in history_messages:
-                        if msg.role == 'doctor':
-                            contents.append({'role': 'user', 'parts': [msg.content]})
-                        elif msg.role == 'assistant':
-                            contents.append({'role': 'model', 'parts': [msg.content]})
-
-                contents.append({'role': 'user', 'parts': [full_user_input]})
-
-                response = model.generate_content(contents)
-                raw_text = response.text
-                return cls._parse_ai_output(raw_text)
-
-            except Exception as e:
-                logger.error(f"Gemini API error: {e}. Falling back to Rule-based response.")
-                return cls._generate_fallback_response(user_message_text, patient_context)
+            logger.error(f"All Gemini models failed. Last error: {last_error}. Falling back to Rule-based response.")
+            return cls._generate_fallback_response(user_message_text, patient_context)
         else:
             logger.info("GEMINI_API_KEY not set. Using Standard Chatbot Engine.")
             return cls._generate_fallback_response(user_message_text, patient_context)

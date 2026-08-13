@@ -136,10 +136,15 @@ export const ProviderAPI = {
   updateMe: (data) => apiFetch('provider', '/providers/me', { method: 'PATCH', body: JSON.stringify(data) }),
   getLicenses: (providerId) => apiFetch('provider', `/providers/${providerId}/licenses`),
   uploadLicense: (providerId, data) => apiFetch('provider', `/providers/${providerId}/licenses`, { method: 'POST', body: JSON.stringify(data) }),
-  verifyProvider: (providerId, is_verified, notes = '') => apiFetch('provider', `/providers/${providerId}/verification`, {
-    method: 'PATCH',
-    body: JSON.stringify({ is_verified, notes })
-  }),
+  verifyProvider: (providerId, status, notes = '') => {
+    let statusValue = status;
+    if (status === true) statusValue = 'VERIFIED';
+    else if (status === false) statusValue = 'REJECTED';
+    return apiFetch('provider', `/providers/${providerId}/verification`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: statusValue, notes })
+    });
+  },
   getServices: (providerId) => apiFetch('provider', `/providers/${providerId}/services`),
   createService: (providerId, data) => apiFetch('provider', `/providers/${providerId}/services`, { method: 'POST', body: JSON.stringify(data) }),
   updateService: (providerId, serviceId, data) => apiFetch('provider', `/providers/${providerId}/services/${serviceId}`, { method: 'PATCH', body: JSON.stringify(data) })

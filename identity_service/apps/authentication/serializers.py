@@ -92,17 +92,24 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user profile."""
     roles = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'username', 'phone', 'status',
-            'is_mfa_enabled', 'roles', 'created_at', 'updated_at',
+            'is_mfa_enabled', 'roles', 'role', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'email', 'created_at', 'updated_at']
 
     def get_roles(self, obj):
-        return list(obj.user_roles.values_list('role__name', flat=True))
+        roles = list(obj.user_roles.values_list('role__name', flat=True))
+        roles.sort(key=lambda r: {'ADMIN': 1, 'DOCTOR': 2, 'PROVIDER_ADMIN': 3, 'PATIENT': 4}.get(r, 99))
+        return roles
+
+    def get_role(self, obj):
+        roles = self.get_roles(obj)
+        return roles[0] if roles else None
 
 
 class UserStatusSerializer(serializers.Serializer):

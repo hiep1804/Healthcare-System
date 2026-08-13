@@ -265,12 +265,18 @@ export const attachProvidersListeners = async () => {
             btn.onclick = async (e) => {
               const providerId = e.currentTarget.dataset.id;
               const userId = e.currentTarget.dataset.userId;
+              console.log('[APPROVE] providerId:', providerId, 'userId:', userId);
               if (confirm('Phê duyệt ứng viên này làm Bác sĩ chính thức?')) {
                 try {
                   await ProviderAPI.verifyProvider(providerId, 'VERIFIED', 'Verified by Admin');
+                  console.log('[APPROVE] verifyProvider OK');
                   try {
-                    await AuthAPI.assignRole(userId, 'DOCTOR');
-                  } catch (rErr) {}
+                    const roleResult = await AuthAPI.assignRole(userId, 'DOCTOR');
+                    console.log('[APPROVE] assignRole OK:', roleResult);
+                  } catch (rErr) {
+                    console.error('[APPROVE] assignRole FAILED:', rErr);
+                    alert('Cảnh báo: Đã duyệt hồ sơ BS nhưng gán role DOCTOR thất bại: ' + (rErr.message || rErr));
+                  }
                   alert('Đã phê duyệt Bác sĩ thành công!');
                   loadPendingApplications();
                   loadProviders();

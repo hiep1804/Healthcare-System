@@ -15,7 +15,8 @@ import { ProfilePage, attachProfileListeners } from './src/pages/Profile.js';
 import { PatientHistoryPage, attachPatientHistoryListeners } from './src/pages/PatientHistory.js';
 import { ApplyDoctorPage, attachApplyDoctorListeners } from './src/pages/ApplyDoctor.js';
 import { DoctorSchedulePage, attachDoctorScheduleListeners } from './src/pages/DoctorSchedule.js';
-import { removeToken } from './src/api.js';
+import { removeToken, getToken, setUser, AuthAPI } from './src/api.js';
+import { attachNavbarListeners } from './src/components/Navbar.js';
 
 // --- ROUTER ---
 const routes = {
@@ -49,14 +50,27 @@ const router = async () => {
     if (existingMinFab) existingMinFab.remove();
   }
   
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const token = getToken();
+  let user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  // Auto-sync latest user info/role from backend if logged in
+  if (token && user && path !== '/login' && path !== '/register') {
+    try {
+      const me = await AuthAPI.getMe();
+      if (me && me.role && me.role !== user.role) {
+        user = { ...user, ...me };
+        setUser(user);
+      }
+    } catch (e) {}
+  }
+
   const role = user ? user.role : null;
 
   // Define allowed routes per role based on the Navbar logic
   const allowedRoutes = {
     'PATIENT': ['/', '/profile', '/providers', '/appointments', '/medical-records', '/consultations', '/subscriptions', '/apply-doctor'],
     'DOCTOR': ['/', '/profile', '/appointments', '/consultations', '/patient-history', '/doctor-schedule'],
-    'ADMIN': ['/', '/profile', '/providers', '/subscriptions', '/insurance', '/notifications', '/audit', '/admin-users', '/patient-history']
+    'ADMIN': ['/', '/profile', '/providers', '/subscriptions', '/insurance', '/notifications', '/audit', '/admin-users']
   };
 
   const route = routes[path];
@@ -72,6 +86,7 @@ const router = async () => {
     }
 
     app.innerHTML = route.render();
+    attachNavbarListeners();
     if (route.after) {
       await route.after();
     }

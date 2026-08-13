@@ -15,6 +15,13 @@ from .serializers import (
 )
 from .permissions import IsAdmin, IsDoctorOrAdmin
 
+ROLE_PRIORITY = {'ADMIN': 1, 'DOCTOR': 2, 'PROVIDER_ADMIN': 3, 'PATIENT': 4}
+
+def get_user_roles_sorted(user):
+    roles = list(user.user_roles.values_list('role__name', flat=True))
+    roles.sort(key=lambda r: ROLE_PRIORITY.get(r, 99))
+    return roles
+
 
 class RegisterView(APIView):
     """POST /api/v1/auth/register - Register new patient or doctor account."""
@@ -32,7 +39,7 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         tokens = RefreshToken.for_user(user)
-        roles = list(user.user_roles.values_list('role__name', flat=True))
+        roles = get_user_roles_sorted(user)
         tokens['roles'] = roles
         access_token = tokens.access_token
         access_token['roles'] = roles
@@ -67,7 +74,7 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         tokens = RefreshToken.for_user(user)
-        roles = list(user.user_roles.values_list('role__name', flat=True))
+        roles = get_user_roles_sorted(user)
         tokens['roles'] = roles
         access_token = tokens.access_token
         access_token['roles'] = roles
@@ -202,11 +209,10 @@ class MFAVerifyView(APIView):
                 user.save()
 
             tokens = RefreshToken.for_user(user)
-            roles = list(user.user_roles.values_list('role__name', flat=True))
+            roles = get_user_roles_sorted(user)
             tokens['roles'] = roles
             access_token = tokens.access_token
             access_token['roles'] = roles
-            roles = list(user.user_roles.values_list('role__name', flat=True))
 
             Session.objects.create(
                 user=user,
