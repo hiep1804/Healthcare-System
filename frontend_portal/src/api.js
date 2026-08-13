@@ -192,6 +192,7 @@ export const NotificationAPI = {
   getTemplates: () => apiFetch('notification', '/notification-templates'),
   createTemplate: (data) => apiFetch('notification', '/notification-templates', { method: 'POST', body: JSON.stringify(data) }),
   updateTemplate: (id, data) => apiFetch('notification', `/notification-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  sendNotification: (data) => apiFetch('notification', '/notifications/send', { method: 'POST', body: JSON.stringify(data) }),
   getJobs: () => apiFetch('notification', '/notification-jobs'),
   retryJob: (id) => apiFetch('notification', `/notification-jobs/${id}/retry`, { method: 'POST' })
 };
@@ -203,11 +204,22 @@ export const AuditAPI = {
 
 // 9. Subscription Service
 export const SubscriptionAPI = {
-  getPlans: () => apiFetch('subscription', '/plans'),
+  getPlans: (params = '') => apiFetch('subscription', `/plans${params ? '?' + params : ''}`),
   createPlan: (data) => apiFetch('subscription', '/plans', { method: 'POST', body: JSON.stringify(data) }),
+  updatePlan: (id, data) => apiFetch('subscription', `/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePlan: (id) => apiFetch('subscription', `/plans/${id}`, { method: 'DELETE' }),
   getSubscriptions: () => apiFetch('subscription', '/subscriptions'),
-  subscribePlan: (plan_id) => apiFetch('subscription', '/subscriptions', { method: 'POST', body: JSON.stringify({ plan_id }) }),
-  cancelSubscription: (id) => apiFetch('subscription', `/subscriptions/${id}/cancel`, { method: 'POST' }),
+  subscribePlan: (planId) => {
+    const user = getUser();
+    return apiFetch('subscription', '/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({
+        patient_id: user?.id,
+        plan: planId
+      })
+    });
+  },
+  cancelSubscription: (id) => apiFetch('subscription', `/subscriptions/${id}/cancel`, { method: 'PATCH' }),
   getUsage: (id) => apiFetch('subscription', `/subscriptions/${id}/usage`)
 };
 

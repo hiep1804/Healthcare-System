@@ -108,8 +108,8 @@ export const attachInsuranceListeners = async () => {
           patient_id: user.id,
           provider_name: document.getElementById('policyProvider').value,
           policy_number: document.getElementById('policyNumber').value,
-          valid_from: document.getElementById('policyValidFrom').value,
-          valid_until: document.getElementById('policyValidUntil').value
+          start_date: document.getElementById('policyValidFrom').value,
+          expiry_date: document.getElementById('policyValidUntil').value
         });
         alert('Đã lưu thẻ bảo hiểm thành công!');
         polContainer.style.display = 'none';
@@ -131,9 +131,14 @@ export const attachInsuranceListeners = async () => {
     claimForm.onsubmit = async (e) => {
       e.preventDefault();
       try {
+        const amount = document.getElementById('claimAmount').value;
+        const dummyApptId = crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-0000-0000-000000000000';
         await InsuranceAPI.createClaim({
+          patient_id: user.id,
           policy: document.getElementById('claimPolicyId').value,
-          amount_claimed: document.getElementById('claimAmount').value
+          appointment_id: dummyApptId,
+          total_amount: amount,
+          claimed_amount: amount
         });
         alert('Đã nộp yêu cầu bồi thường!');
         claimContainer.style.display = 'none';

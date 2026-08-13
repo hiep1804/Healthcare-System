@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Navbar.js';
-import { ProviderAPI, AppointmentAPI, PatientAPI, getUser, getErrorMessage } from '../api.js';
+import { AuthAPI, ProviderAPI, AppointmentAPI, PatientAPI, getUser, getErrorMessage } from '../api.js';
 
 export const ProvidersPage = () => {
   const user = getUser();

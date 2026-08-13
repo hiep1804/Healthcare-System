@@ -96,22 +96,33 @@ export const attachSubscriptionsListeners = async () => {
   const loadMySubscriptions = async () => {
     try {
       const data = await SubscriptionAPI.getSubscriptions();
-      const subs = data.results || data || [];
+      let subs = [];
+      if (Array.isArray(data)) {
+        subs = data;
+      } else if (data && data.id) {
+        subs = [data];
+      } else if (data && data.results) {
+        subs = data.results;
+      }
 
       if (subs.length === 0) {
         mySubContainer.innerHTML = '<p class="text-muted">Bạn chưa đăng ký gói dịch vụ nào.</p>';
         return;
       }
 
-      mySubContainer.innerHTML = subs.map(s => `
-        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong>Gói ID: ${s.id ? s.id.substring(0,8) : 'Active'}</strong> - Status: <span class="badge badge-success">${s.status || 'ACTIVE'}</span>
-            <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem;" class="text-muted">Hạn sử dụng: ${s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : 'N/A'}</p>
+      mySubContainer.innerHTML = subs.map(s => {
+        const planName = s.plan_detail?.name || `Gói #${s.id ? s.id.substring(0,8) : 'Active'}`;
+        return `
+          <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(59,130,246,0.3); padding: 1.2rem; border-radius: 8px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="color: var(--primary-blue); font-size: 1.1rem; margin: 0 0 0.3rem 0;">${planName}</h3>
+              <p style="margin: 0; font-size: 0.9rem;">Trạng thái: <span class="badge badge-success">${s.status || 'ACTIVE'}</span></p>
+              <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem;" class="text-muted">Hạn sử dụng: ${s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <button class="btn btn-secondary btn-sm cancel-sub-btn" data-id="${s.id}">Hủy gói</button>
           </div>
-          <button class="btn btn-secondary btn-sm cancel-sub-btn" data-id="${s.id}">Hủy gói</button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       document.querySelectorAll('.cancel-sub-btn').forEach(btn => {
         btn.onclick = async (e) => {
@@ -126,14 +137,18 @@ export const attachSubscriptionsListeners = async () => {
       });
 
     } catch (e) {
-      mySubContainer.innerHTML = '<p class="text-muted">Không có thông tin gói đang sử dụng.</p>';
+      if (e && e.status === 404) {
+        mySubContainer.innerHTML = '<p class="text-muted">Bạn chưa đăng ký gói dịch vụ nào.</p>';
+      } else {
+        mySubContainer.innerHTML = '<p class="text-muted">Không có thông tin gói đang sử dụng.</p>';
+      }
     }
   };
 
   // Load Available Plans
   const loadPlans = async () => {
     try {
-      const data = await SubscriptionAPI.getPlans();
+      const data = await SubscriptionAPI.getPlans(isAdmin ? 'all=true' : '');
       const plans = data.results || data || [];
       
       if (plans.length === 0) {
@@ -141,15 +156,32 @@ export const attachSubscriptionsListeners = async () => {
         return;
       }
 
-      container.innerHTML = plans.map(p => `
-        <div class="stat-card glass-panel" style="align-items: center; text-align: center; padding: 2rem 1.5rem;">
-          <h2 style="color: var(--primary-blue); font-size: 1.4rem; margin-bottom: 0.5rem;">${p.name}</h2>
-          <div style="font-size: 1.8rem; font-weight: bold; margin: 0.8rem 0;">${Number(p.price || p.price_per_month || 0).toLocaleString()} VND</div>
-          <p style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted); min-height: 40px;">${p.description || 'Quyền lợi khám bệnh ưu đãi.'}</p>
-          <button class="btn btn-primary subscribe-btn" style="width: 100%;" data-id="${p.id}">Đăng ký Gói này</button>
-        </div>
-      `).join('');
+      container.innerHTML = plans.map(p => {
+        const isActivePlan = p.is_active !== false;
+        let actionBtnHTML = `<button class="btn btn-primary subscribe-btn" style="width: 100%;" data-id="${p.id}">Đăng ký Gói này</button>`;
 
+        if (isAdmin) {
+          if (isActivePlan) {
+            actionBtnHTML = `<button class="btn btn-secondary deactivate-plan-btn" style="width: 100%; color: #ef4444; border-color: #ef4444;" data-id="${p.id}">🚫 Vô hiệu hóa (Hủy gói)</button>`;
+          } else {
+            actionBtnHTML = `<button class="btn btn-secondary activate-plan-btn" style="width: 100%; color: #10b981; border-color: #10b981;" data-id="${p.id}">✓ Kích hoạt lại Gói</button>`;
+          }
+        }
+
+        return `
+          <div class="stat-card glass-panel" style="align-items: center; text-align: center; padding: 2rem 1.5rem; opacity: ${isActivePlan ? '1' : '0.6'};">
+            <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 0.5rem;">
+              <span class="badge ${isActivePlan ? 'badge-success' : 'badge-warning'}">${isActivePlan ? 'HOẠT ĐỘNG' : 'ĐÃ VÔ HIỆU HÓA'}</span>
+            </div>
+            <h2 style="color: var(--primary-blue); font-size: 1.4rem; margin-bottom: 0.5rem;">${p.name}</h2>
+            <div style="font-size: 1.8rem; font-weight: bold; margin: 0.8rem 0;">${Number(p.price || p.price_per_month || 0).toLocaleString()} VND</div>
+            <p style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted); min-height: 40px;">${p.description || 'Quyền lợi khám bệnh ưu đãi.'}</p>
+            ${actionBtnHTML}
+          </div>
+        `;
+      }).join('');
+
+      // Patient subscribe event
       document.querySelectorAll('.subscribe-btn').forEach(btn => {
         btn.onclick = async (e) => {
           const planId = e.target.dataset.id;
@@ -159,6 +191,34 @@ export const attachSubscriptionsListeners = async () => {
               alert('Đăng ký thành công!');
               loadMySubscriptions();
             } catch (err) { alert(getErrorMessage(err, 'Lỗi đăng ký gói.')); }
+          }
+        };
+      });
+
+      // Admin deactivate plan event
+      document.querySelectorAll('.deactivate-plan-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+          const planId = e.target.dataset.id;
+          if (confirm('Bạn có chắc muốn VÔ HIỆU HÓA (Hủy) gói dịch vụ này? Bệnh nhân sẽ không thể đăng ký mới gói này nữa.')) {
+            try {
+              await SubscriptionAPI.deletePlan(planId);
+              alert('Đã vô hiệu hóa gói dịch vụ thành công!');
+              loadPlans();
+            } catch (err) { alert(getErrorMessage(err, 'Lỗi vô hiệu hóa gói.')); }
+          }
+        };
+      });
+
+      // Admin activate plan event
+      document.querySelectorAll('.activate-plan-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+          const planId = e.target.dataset.id;
+          if (confirm('Xác nhận KÍCH HOẠT LẠI gói dịch vụ này?')) {
+            try {
+              await SubscriptionAPI.updatePlan(planId, { is_active: true });
+              alert('Đã kích hoạt lại gói dịch vụ thành công!');
+              loadPlans();
+            } catch (err) { alert(getErrorMessage(err, 'Lỗi kích hoạt lại gói.')); }
           }
         };
       });

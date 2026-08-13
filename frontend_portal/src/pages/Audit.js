@@ -37,10 +37,13 @@ export const attachAuditListeners = async () => {
     }
 
     container.innerHTML = events.map(e => `
-      <div class="stat-card glass-panel" style="align-items: flex-start; padding: 1rem 1.5rem; border-left: 4px solid #f59e0b;">
-        <h3 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 0.2rem;">Action: ${e.action}</h3>
-        <p style="margin-bottom: 0.2rem; font-size: 0.85rem; color: var(--text-muted);">Service: ${e.service_name} | User ID: ${e.user_id || 'System'}</p>
-        <p style="color: var(--text-muted); font-size: 0.8rem;">Resource: ${e.resource_type} (${e.resource_id}) at ${new Date(e.timestamp).toLocaleString()}</p>
+      <div class="stat-card glass-panel" style="align-items: flex-start; padding: 1rem 1.5rem; border-left: 4px solid ${e.result === 'FAILED' ? '#ef4444' : '#f59e0b'};">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <h3 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 0.2rem;">Action: ${e.action}</h3>
+          <span class="badge ${e.result === 'SUCCESS' ? 'badge-success' : 'badge-error'}">${e.result || 'SUCCESS'}</span>
+        </div>
+        <p style="margin-bottom: 0.2rem; font-size: 0.85rem; color: var(--text-muted);">Actor Role: <strong>${e.actor_role || 'SYSTEM'}</strong> | User ID: ${e.actor_user_id || 'System'}</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Resource: ${e.resource_type || 'N/A'} (${e.resource_id || 'N/A'}) at ${e.created_at ? new Date(e.created_at).toLocaleString() : 'N/A'}</p>
       </div>
     `).join('');
   } catch (e) {
