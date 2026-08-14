@@ -68,16 +68,20 @@ class ProviderMeView(APIView):
 
 class ProviderListCreateView(APIView):
     """
-    GET /api/v1/providers - Search and list providers (Public)
-    POST /api/v1/providers - Create provider profile (Doctor/Admin)
+    GET /api/v1/providers - Search and list providers (Public/Admin)
+    POST /api/v1/providers - Create provider profile / Register as doctor (Authenticated)
     """
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated(), IsDoctorOrAdmin()]
+            return [IsAuthenticated()]
         return [AllowAny()]
 
     def get(self, request):
-        queryset = Provider.objects.filter(status='VERIFIED')
+        status_param = request.query_params.get('status')
+        if status_param:
+            queryset = Provider.objects.filter(status=status_param)
+        else:
+            queryset = Provider.objects.filter(status='VERIFIED')
 
         # Filter by specialty_id (UUID or name matches provider's services)
         specialty_id = request.query_params.get('specialty_id')
@@ -98,11 +102,6 @@ class ProviderListCreateView(APIView):
         if max_price:
             queryset = queryset.filter(services__price__lte=max_price).distinct()
 
-        # In MVP, available_date filtering can be mocked or basic
-        # In full design, it joins with appointment-service time slots
-        # For now, we will return the matching providers.
-
-        # Apply standard pagination manually since we're using APIView
         from common.pagination import StandardResultsSetPagination
         paginator = StandardResultsSetPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
@@ -116,7 +115,7 @@ class ProviderListCreateView(APIView):
     def post(self, request):
         serializer = ProviderCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        provider = serializer.save()
+        provider = serializer.save(status='PENDING_VERIFICATION')
         return Response(ProviderSerializer(provider).data, status=status.HTTP_201_CREATED)
 
 
@@ -156,8 +155,26 @@ class ProviderDetailView(APIView):
 
 
 class LicenseUploadView(APIView):
-    """POST /api/v1/providers/{provider_id}/licenses - Upload license document (Doctor/Admin)"""
-    permission_classes = [IsAuthenticated, IsDoctorOrAdmin]
+    """
+    GET /api/v1/providers/{provider_id}/licenses - View provider licenses (Public/Doctor/Admin)
+    POST /api/v1/providers/{provider_id}/licenses - Upload license document (Authenticated user)
+    """
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get(self, request, provider_id):
+        try:
+            provider = Provider.objects.get(id=provider_id)
+        except Provider.DoesNotExist:
+            return Response(
+                {'error': {'code': 'PROVIDER_NOT_FOUND', 'message': 'Không tìm thấy bác sĩ.'}},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        licenses = provider.licenses.all()
+        serializer = DoctorLicenseSerializer(licenses, many=True)
+        return Response({'data': serializer.data})
 
     def post(self, request, provider_id):
         try:
@@ -169,8 +186,9 @@ class LicenseUploadView(APIView):
             )
         serializer = DoctorLicenseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        license = serializer.save(provider=provider)
-        return Response(DoctorLicenseSerializer(license).data, status=status.HTTP_201_CREATED)
+        is_verified = getattr(request.user, 'role', '') == 'ADMIN' or getattr(request.user, 'is_staff', False)
+        license_obj = serializer.save(provider=provider, is_verified=is_verified)
+        return Response(DoctorLicenseSerializer(license_obj).data, status=status.HTTP_201_CREATED)
 
 
 class ProviderVerificationView(APIView):

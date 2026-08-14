@@ -4,23 +4,35 @@ import { AuthAPI, PatientAPI, ProviderAPI, getUser, getErrorMessage } from '../a
 export const ProfilePage = () => {
   return `
     ${Navbar()}
-    <div class="container animate-fade-in">
+    <div class="container animate-fade-in" style="padding-bottom: 4rem;">
       <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
-        <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--primary-blue);">My Profile</h1>
-        <p class="text-muted">Manage your personal information.</p>
+        <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--primary-blue);">👤 Hồ sơ Cá nhân & Tài khoản</h1>
+        <p class="text-muted">Quản lý thông tin tài khoản cá nhân, thông tin liên hệ và xem bằng cấp chứng chỉ chuyên môn.</p>
       </div>
 
-      <div class="glass-panel" style="padding: 2rem;">
+      <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+        <h2 style="font-size: 1.4rem; color: var(--primary-blue); margin-bottom: 1rem;">Thông tin Cá nhân & Liên hệ</h2>
         <div id="profileError" style="margin-bottom: 1rem;"></div>
         <form id="profileForm" style="display: none;">
           <div id="dynamicFields"></div>
           
-          <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
-            Save Changes
+          <button type="submit" class="btn btn-primary" style="margin-top: 1rem; font-weight: 600;">
+            💾 Lưu Thay đổi Hồ sơ
           </button>
         </form>
         <div id="loadingIndicator" style="text-align: center; color: var(--text-muted);">
-          Loading profile data...
+          Đang tải dữ liệu hồ sơ...
+        </div>
+      </div>
+
+      <!-- DOCTOR LICENSE SECTION (READ-ONLY FOR DOCTOR, UPLOADED BY ADMIN) -->
+      <div id="doctorLicenseSection" style="display: none;">
+        <div class="glass-panel" style="padding: 2rem;">
+          <h2 style="font-size: 1.3rem; color: var(--primary-blue); margin-bottom: 0.5rem;">Bằng cấp & Chứng chỉ Hành nghề Bác sĩ</h2>
+          <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.9rem;">
+            ℹ️ <em>Thông tin chứng chỉ chuyên môn do Quản trị viên (Admin) thẩm định và tải lên hệ thống.</em>
+          </p>
+          <div id="doctorLicensesList">Đang tải danh sách chứng chỉ...</div>
         </div>
       </div>
     </div>
@@ -47,152 +59,194 @@ export const attachProfileListeners = async () => {
 
   try {
     let profileData = null;
-    let authData = await AuthAPI.getMe(); // Get base auth data
+    let authData = await AuthAPI.getMe().catch(() => ({}));
 
-    // Render fields based on role
     let fieldsHTML = '';
 
     if (user.role === 'ADMIN') {
       fieldsHTML = `
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">Email tài khoản</label>
           <input type="text" class="form-input" value="${authData.email || ''}" disabled />
         </div>
         <div class="form-group">
-          <label class="form-label">Username</label>
+          <label class="form-label">Tên đăng nhập</label>
           <input type="text" class="form-input" value="${authData.username || ''}" disabled />
         </div>
         <div class="form-group">
-          <label class="form-label">Phone Number</label>
+          <label class="form-label">Số điện thoại</label>
           <input type="text" class="form-input" id="phoneInput" value="${authData.phone || ''}" />
         </div>
       `;
     } else if (user.role === 'PATIENT') {
       profileData = await PatientAPI.getMe();
       if (!profileData) {
-        showError('Patient profile not found. Please create one first.');
+        showError('Không tìm thấy hồ sơ Bệnh nhân.');
         loading.style.display = 'none';
         return;
       }
+
       fieldsHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label class="form-label">First Name</label>
+            <label class="form-label">Tên</label>
             <input type="text" class="form-input" id="firstNameInput" value="${profileData.first_name || ''}" required />
           </div>
           <div class="form-group">
-            <label class="form-label">Last Name</label>
+            <label class="form-label">Họ & Tên đệm</label>
             <input type="text" class="form-input" id="lastNameInput" value="${profileData.last_name || ''}" required />
           </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label class="form-label">Date of Birth</label>
-            <input type="date" class="form-input" id="dobInput" value="${profileData.date_of_birth || ''}" required />
+            <label class="form-label">Ngày sinh</label>
+            <input type="date" class="form-input" id="dobInput" value="${profileData.date_of_birth || ''}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Gender</label>
+            <label class="form-label">Giới tính</label>
             <select class="form-input" id="genderInput">
-              <option value="M" ${profileData.gender === 'M' ? 'selected' : ''}>Male</option>
-              <option value="F" ${profileData.gender === 'F' ? 'selected' : ''}>Female</option>
-              <option value="O" ${profileData.gender === 'O' ? 'selected' : ''}>Other</option>
+              <option value="M" ${profileData.gender === 'M' ? 'selected' : ''}>Nam</option>
+              <option value="F" ${profileData.gender === 'F' ? 'selected' : ''}>Nữ</option>
+              <option value="O" ${profileData.gender === 'O' ? 'selected' : ''}>Khác</option>
             </select>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Contact Number</label>
-          <input type="text" class="form-input" id="contactInput" value="${profileData.contact_number || ''}" required />
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Số điện thoại liên hệ</label>
+            <input type="text" class="form-input" id="contactNumberInput" value="${profileData.contact_number || profileData.phone || ''}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Số điện thoại khẩn cấp</label>
+            <input type="text" class="form-input" id="emergencyContactInput" value="${profileData.emergency_contact || ''}" />
+          </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Address</label>
-          <input type="text" class="form-input" id="addressInput" value="${profileData.address || ''}" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Emergency Contact</label>
-          <input type="text" class="form-input" id="emergencyInput" value="${profileData.emergency_contact || ''}" required />
+          <label class="form-label">Địa chỉ thường trú</label>
+          <input type="text" class="form-input" id="addressInput" value="${profileData.address || ''}" />
         </div>
       `;
     } else if (user.role === 'DOCTOR') {
       profileData = await ProviderAPI.getMe();
-      if (!profileData) {
-        showError('Doctor profile not found.');
-        loading.style.display = 'none';
-        return;
+      const docLicSection = document.getElementById('doctorLicenseSection');
+      if (docLicSection) docLicSection.style.display = 'block';
+
+      if (profileData) {
+        loadDoctorLicenses(profileData.id);
+        fieldsHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Tên Bác sĩ</label>
+              <input type="text" class="form-input" id="firstNameInput" value="${profileData.first_name || ''}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Họ Bác sĩ</label>
+              <input type="text" class="form-input" id="lastNameInput" value="${profileData.last_name || ''}" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Giới thiệu bản thân & Kinh nghiệm (Bio)</label>
+            <textarea class="form-input" id="bioInput" rows="3">${profileData.bio || ''}</textarea>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Tỉnh / Thành phố hoạt động</label>
+              <input type="text" class="form-input" id="locationInput" value="${profileData.location || ''}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Chuyên khoa</label>
+              <input type="text" class="form-input" value="${profileData.specialty_detail ? profileData.specialty_detail.name : 'Đa khoa'}" disabled />
+            </div>
+          </div>
+        `;
+      } else {
+        fieldsHTML = `<div class="alert alert-info">Chưa có thông tin hồ sơ Bác sĩ.</div>`;
       }
-      fieldsHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label class="form-label">First Name</label>
-            <input type="text" class="form-input" id="firstNameInput" value="${profileData.first_name || ''}" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Last Name</label>
-            <input type="text" class="form-input" id="lastNameInput" value="${profileData.last_name || ''}" required />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Bio</label>
-          <textarea class="form-input" id="bioInput" rows="3">${profileData.bio || ''}</textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Location</label>
-          <input type="text" class="form-input" id="locationInput" value="${profileData.location || ''}" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Clinic</label>
-          <input type="text" class="form-input" id="clinicInput" value="${profileData.clinic || ''}" />
-        </div>
-      `;
     }
 
     fieldsContainer.innerHTML = fieldsHTML;
     loading.style.display = 'none';
     form.style.display = 'block';
 
-    // Handle form submit
-    form.addEventListener('submit', async (e) => {
+    // Submit handler
+    form.onsubmit = async (e) => {
       e.preventDefault();
       errorDiv.innerHTML = '';
-      const btn = form.querySelector('button[type="submit"]');
-      const originalText = btn.textContent;
-      btn.textContent = 'Saving...';
-      btn.disabled = true;
 
       try {
         if (user.role === 'ADMIN') {
-          await AuthAPI.updateMe({
-            phone: document.getElementById('phoneInput').value
-          });
+          const phone = document.getElementById('phoneInput').value;
+          await AuthAPI.updateMe({ phone });
+          showSuccess('Cập nhật thông tin cá nhân thành công!');
         } else if (user.role === 'PATIENT') {
-          await PatientAPI.updateMe({
+          const payload = {
             first_name: document.getElementById('firstNameInput').value,
             last_name: document.getElementById('lastNameInput').value,
-            date_of_birth: document.getElementById('dobInput').value,
+            date_of_birth: document.getElementById('dobInput').value || null,
             gender: document.getElementById('genderInput').value,
-            contact_number: document.getElementById('contactInput').value,
+            contact_number: document.getElementById('contactNumberInput').value,
+            emergency_contact: document.getElementById('emergencyContactInput').value,
             address: document.getElementById('addressInput').value,
-            emergency_contact: document.getElementById('emergencyInput').value
-          });
+          };
+          await PatientAPI.updateMe(payload);
+          showSuccess('Cập nhật thông tin bệnh nhân thành công!');
         } else if (user.role === 'DOCTOR') {
-          await ProviderAPI.updateMe({
+          if (!profileData) return;
+          const payload = {
             first_name: document.getElementById('firstNameInput').value,
             last_name: document.getElementById('lastNameInput').value,
             bio: document.getElementById('bioInput').value,
             location: document.getElementById('locationInput').value,
-            clinic: document.getElementById('clinicInput').value
-          });
+          };
+          await ProviderAPI.updateMe(payload);
+          showSuccess('Cập nhật hồ sơ Bác sĩ thành công!');
         }
-        showSuccess('Profile updated successfully.');
       } catch (err) {
-        showError(getErrorMessage(err, 'Failed to update profile.'));
-      } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
+        showError(getErrorMessage(err, 'Lỗi cập nhật thông tin hồ sơ.'));
       }
-    });
+    };
 
   } catch (err) {
-    showError(getErrorMessage(err, 'Failed to load profile data.'));
     loading.style.display = 'none';
+    showError(getErrorMessage(err, 'Lỗi tải thông tin hồ sơ.'));
+  }
+};
+
+// Helper: Load Doctor Licenses
+const loadDoctorLicenses = async (providerId) => {
+  const container = document.getElementById('doctorLicensesList');
+  if (!container) return;
+
+  try {
+    const data = await ProviderAPI.getLicenses(providerId);
+    const licenses = data.results || data || [];
+
+    if (licenses.length === 0) {
+      container.innerHTML = '<p class="text-muted">Chưa có chứng chỉ hành nghề nào được tải lên.</p>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display: grid; gap: 1rem;">
+        ${licenses.map(lic => `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <strong style="color: var(--primary-blue);">Mã CCHN: ${lic.license_number || 'N/A'}</strong>
+              <span class="badge ${lic.status === 'VERIFIED' ? 'badge-success' : 'badge-warning'}">
+                ${lic.status === 'VERIFIED' ? 'Đã thẩm định' : 'Đang duyệt'}
+              </span>
+            </div>
+            <p style="margin-bottom: 0.3rem; font-size: 0.9rem;"><strong>Ngày cấp:</strong> ${lic.issue_date || 'N/A'}</p>
+            ${lic.license_file_url ? `
+              <p style="margin-bottom: 0;">
+                <a href="${lic.license_file_url}" target="_blank" style="color: var(--primary-blue);">🔗 Xem File minh chứng CCHN</a>
+              </p>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<p class="text-muted">Chưa có chứng chỉ hành nghề được tải lên.</p>';
   }
 };

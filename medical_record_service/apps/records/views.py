@@ -149,7 +149,11 @@ class PatientVitalsListCreateView(APIView):
         return Response({'data': serializer.data})
 
     def post(self, request, patient_id):
-        serializer = VitalsSerializer(data=request.data)
+        data = dict(request.data)
+        if 'temperature_celsius' in data and 'temperature_c' not in data:
+            data['temperature_c'] = data['temperature_celsius']
+        serializer = VitalsSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        vitals = serializer.save(patient_id=patient_id, recorded_by=request.user.id)
+        rec_by = getattr(request.user, 'id', None) or patient_id
+        vitals = serializer.save(patient_id=patient_id, recorded_by=rec_by)
         return Response(VitalsSerializer(vitals).data, status=status.HTTP_201_CREATED)

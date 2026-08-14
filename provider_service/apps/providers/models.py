@@ -70,7 +70,7 @@ class DoctorLicense(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='licenses')
     license_number = models.CharField(max_length=100)
     issue_date = models.DateField()
-    expiry_date = models.DateField()
+    expiry_date = models.DateField(null=True, blank=True)
     document_url = models.CharField(max_length=500)
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

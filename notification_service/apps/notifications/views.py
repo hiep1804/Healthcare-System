@@ -51,31 +51,37 @@ class TemplateDetailView(APIView):
 
 
 class SendNotificationView(APIView):
-    """POST /api/v1/notifications/send - Send a notification using templates (System/Admin)"""
+    """POST /api/v1/notifications/send - Send a notification using templates or direct content (System/Admin)"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        import uuid
         serializer = SendNotificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        template_code = serializer.validated_data['template_code']
-        channel = serializer.validated_data['channel']
-        recipient_user_id = serializer.validated_data['recipient_user_id']
+        template_code = serializer.validated_data.get('template_code') or 'GENERAL_EMAIL'
+        channel = serializer.validated_data.get('channel', 'EMAIL')
+        recipient_user_id = serializer.validated_data.get('recipient_user_id') or uuid.uuid4()
         recipient_address = serializer.validated_data['recipient_address']
+        custom_subject = serializer.validated_data.get('subject', '')
+        custom_content = serializer.validated_data.get('content', '')
         variables = serializer.validated_data.get('variables', {})
 
-        try:
-            template = NotificationTemplate.objects.get(code=template_code, channel=channel)
-        except NotificationTemplate.DoesNotExist:
-            return Response(
-                {'error': {'code': 'TEMPLATE_NOT_FOUND', 'message': f'Không tìm thấy template {template_code} cho kênh {channel}.'}},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        template = None
+        if template_code:
+            template = NotificationTemplate.objects.filter(code=template_code, channel=channel).first()
+            if not template:
+                template = NotificationTemplate.objects.filter(code=template_code).first()
 
-        # Render basic template variables: e.g. {{patient_name}} -> Nguyễn Văn A
-        rendered_body = template.body_template
-        for k, v in variables.items():
-            rendered_body = rendered_body.replace(f'{{{{{k}}}}}', str(v))
+        # Render content
+        if custom_content:
+            rendered_body = custom_content
+        elif template:
+            rendered_body = template.body_template
+            for k, v in variables.items():
+                rendered_body = rendered_body.replace(f'{{{{{k}}}}}', str(v))
+        else:
+            rendered_body = variables.get('content') or variables.get('message') or 'Thông báo từ hệ thống Y tế'
 
         # Create job
         job = NotificationJob.objects.create(
@@ -88,10 +94,12 @@ class SendNotificationView(APIView):
             sent_at=timezone.now()
         )
 
+        subject_display = custom_subject or (template.subject_template if template else 'Thông báo Y tế')
+
         DeliveryLog.objects.create(
             job=job,
             status='SUCCESS',
-            response_payload=f"Gửi thành công qua {channel}. Nội dung: {rendered_body}"
+            response_payload=f"Gửi thành công tới {recipient_address} qua {channel}. Tiêu đề: {subject_display}. Nội dung: {rendered_body}"
         )
 
         return Response({

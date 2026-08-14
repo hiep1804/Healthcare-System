@@ -25,8 +25,10 @@ class NotificationJobSerializer(serializers.ModelSerializer):
 
 
 class SendNotificationSerializer(serializers.Serializer):
-    recipient_user_id = serializers.UUIDField()
-    channel = serializers.ChoiceField(choices=['SMS', 'EMAIL', 'PUSH'])
-    template_code = serializers.CharField(max_length=100)
+    recipient_user_id = serializers.UUIDField(required=False, allow_null=True)
+    channel = serializers.ChoiceField(choices=['SMS', 'EMAIL', 'PUSH'], default='EMAIL')
+    template_code = serializers.CharField(max_length=100, required=False, allow_blank=True, default='GENERAL_EMAIL')
     recipient_address = serializers.CharField(max_length=250)
+    subject = serializers.CharField(max_length=250, required=False, allow_blank=True)
+    content = serializers.CharField(required=False, allow_blank=True)
     variables = serializers.JSONField(default=dict, required=False)

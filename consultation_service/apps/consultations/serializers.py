@@ -17,6 +17,11 @@ class DiagnosisSerializer(serializers.ModelSerializer):
 
 
 class PrescriptionItemSerializer(serializers.ModelSerializer):
+    duration_days = serializers.IntegerField(required=False, default=5)
+    quantity = serializers.IntegerField(required=False, default=10)
+    dosage = serializers.CharField(required=False, default='1 viên', allow_blank=True)
+    frequency = serializers.CharField(required=False, default='2 lần/ngày', allow_blank=True)
+
     class Meta:
         model = PrescriptionItem
         fields = '__all__'

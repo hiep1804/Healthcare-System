@@ -74,7 +74,7 @@ class Appointment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient_id = models.UUIDField(help_text="Patient ID from patient-service")
     provider_id = models.UUIDField(help_text="Doctor/Provider ID from provider-service")
-    slot = models.OneToOneField(TimeSlot, on_delete=models.CASCADE, related_name='appointment')
+    slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE, related_name='appointments')
     service_id = models.UUIDField(help_text="Service ID from provider-service")
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='HELD')
     hold_expires_at = models.DateTimeField(null=True, blank=True)

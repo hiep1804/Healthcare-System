@@ -15,7 +15,7 @@ from common.permissions import IsAdmin, IsPatient, IsPatientOrAdmin
 
 class PlanListCreateView(APIView):
     """
-    GET /api/v1/plans - Public list of active plans
+    GET /api/v1/plans - Public list of active plans (or all plans for Admin)
     POST /api/v1/plans - Create a new subscription plan (Admin only)
     """
     def get_permissions(self):
@@ -24,7 +24,11 @@ class PlanListCreateView(APIView):
         return [AllowAny()]
 
     def get(self, request):
-        plans = Plan.objects.filter(is_active=True)
+        show_all = request.query_params.get('all') == 'true' or (request.user and getattr(request.user, 'role', '') == 'ADMIN')
+        if show_all:
+            plans = Plan.objects.all()
+        else:
+            plans = Plan.objects.filter(is_active=True)
         serializer = PlanSerializer(plans, many=True)
         return Response({'data': serializer.data})
 
@@ -44,7 +48,10 @@ class PlanListCreateView(APIView):
 
 
 class PlanDetailView(APIView):
-    """PATCH /api/v1/plans/{plan_id} - Update plan details (Admin only)"""
+    """
+    PATCH /api/v1/plans/{plan_id} - Update plan details (Admin only)
+    DELETE /api/v1/plans/{plan_id} - Deactivate/Delete plan (Admin only)
+    """
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def patch(self, request, plan_id):
@@ -60,19 +67,34 @@ class PlanDetailView(APIView):
         serializer.save()
         return Response(PlanSerializer(plan).data)
 
+    def delete(self, request, plan_id):
+        try:
+            plan = Plan.objects.get(id=plan_id)
+            plan.is_active = False
+            plan.save()
+            return Response({'message': 'Đã vô hiệu hóa/hủy gói dịch vụ thành công.'})
+        except Plan.DoesNotExist:
+            return Response(
+                {'error': {'code': 'PLAN_NOT_FOUND', 'message': 'Không tìm thấy gói dịch vụ.'}},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class SubscriptionListCreateView(APIView):
     """
     POST /api/v1/subscriptions - Subscribe to a plan (Patient only)
-    GET /api/v1/subscriptions/me - View own subscription detail (Patient only)
+    GET /api/v1/subscriptions - View own or all subscriptions (Patient/Admin)
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Mocks GET /api/v1/subscriptions/me
-        # Find active subscription for the patient
-        # Patient is identified by user_id
         try:
+            user_role = getattr(request.user, 'role', '')
+            if user_role == 'ADMIN':
+                subscriptions = Subscription.objects.all()
+                serializer = SubscriptionSerializer(subscriptions, many=True)
+                return Response({'data': serializer.data})
+
             subscription = Subscription.objects.filter(patient_id=request.user.id, status='ACTIVE').first()
             if not subscription:
                 return Response(
@@ -126,7 +148,7 @@ class SubscriptionListCreateView(APIView):
 
 
 class SubscriptionCancelView(APIView):
-    """PATCH /api/v1/subscriptions/{subscription_id}/cancel - Cancel subscription (Patient/Admin)"""
+    """PATCH/POST /api/v1/subscriptions/{subscription_id}/cancel - Cancel subscription (Patient/Admin)"""
     permission_classes = [IsAuthenticated, IsPatientOrAdmin]
 
     def patch(self, request, subscription_id):
@@ -142,6 +164,9 @@ class SubscriptionCancelView(APIView):
         sub.status = 'CANCELLED'
         sub.save()
         return Response(SubscriptionSerializer(sub).data)
+
+    def post(self, request, subscription_id):
+        return self.patch(request, subscription_id)
 
 
 class SubscriptionUsageView(APIView):

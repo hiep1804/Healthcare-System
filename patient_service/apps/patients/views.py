@@ -17,8 +17,25 @@ from common.pagination import StandardResultsSetPagination
 
 
 class PatientCreateView(APIView):
-    """POST /api/v1/patients - Create patient profile."""
-    permission_classes = [IsAuthenticated, IsPatientOrAdmin]
+    """
+    GET /api/v1/patients - List patients (Doctor/Admin/Authenticated)
+    POST /api/v1/patients - Create patient profile
+    """
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsPatientOrAdmin()]
+        return [IsAuthenticated()]
+
+    def get(self, request):
+        patients = Patient.objects.all().order_by('-created_at')
+        from common.pagination import StandardResultsSetPagination
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(patients, request, view=self)
+        if page is not None:
+            serializer = PatientSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        serializer = PatientSerializer(patients, many=True)
+        return Response({'data': serializer.data})
 
     def post(self, request):
         serializer = PatientCreateSerializer(data=request.data)

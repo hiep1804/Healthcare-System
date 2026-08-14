@@ -1,0 +1,164 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api_gateway:
+    build: ./api_gateway
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./api_gateway:/app
+    depends_on:
+      - postgres
+      - identity_service
+
+  identity_service:
+    build: ./identity_service
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./identity_service:/app
+    depends_on:
+      - postgres
+
+  patient_service:
+    build: ./patient_service
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./patient_service:/app
+    depends_on:
+      - postgres
+
+  provider_service:
+    build: ./provider_service
+    ports:
+      - "8003:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./provider_service:/app
+    depends_on:
+      - postgres
+
+  appointment_service:
+    build: ./appointment_service
+    ports:
+      - "8004:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./appointment_service:/app
+    depends_on:
+      - postgres
+
+  consultation_service:
+    build: ./consultation_service
+    ports:
+      - "8005:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./consultation_service:/app
+    depends_on:
+      - postgres
+
+  medical_record_service:
+    build: ./medical_record_service
+    ports:
+      - "8006:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./medical_record_service:/app
+    depends_on:
+      - postgres
+
+  notification_service:
+    build: ./notification_service
+    ports:
+      - "8007:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./notification_service:/app
+    depends_on:
+      - postgres
+
+  audit_service:
+    build: ./audit_service
+    ports:
+      - "8008:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./audit_service:/app
+    depends_on:
+      - postgres
+
+  subscription_service:
+    build: ./subscription_service
+    ports:
+      - "8009:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./subscription_service:/app
+    depends_on:
+      - postgres
+
+  insurance_service:
+    build: ./insurance_service
+    ports:
+      - "8010:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./insurance_service:/app
+    depends_on:
+      - postgres
+
+  ai_cds_service:
+    build: ./ai_cds_service
+    ports:
+      - "8011:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./ai_cds_service:/app
+    depends_on:
+      - postgres
+      - neo4j
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: tttn-neo4j-1
+    ports:
+      - "7474:7474" # Web HTTP Console
+      - "7687:7687" # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/healthcare_neo4j_2026
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      - NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:7687
+      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  postgres_data:
+  neo4j_data:

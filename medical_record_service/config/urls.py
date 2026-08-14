@@ -5,6 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.records.urls')),
+    path('api/v1/medical-records/', include('apps.records.urls')),
 
     # Swagger UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
